@@ -18,3 +18,21 @@ def define_colours():
                    'lateral': "#7030A0",    # purple
                    'normal': "#BF9000"}     # sand
     return colour_dict
+
+
+def attempttomakefolder(foldername, recursive=False):
+    ''' Attempts to create a folder with specified name. Does nothing if it already exists. '''
+    import os
+    try:
+        os.path.isdir(foldername)
+    except TypeError: #https://www.python.org/dev/peps/pep-0519/
+        foldername=os.fspath(foldername) #https://github.com/AlexEMG/DeepLabCut/issues/105 (windows)
+
+    if os.path.isdir(foldername):
+        #print(foldername, " already exists!")
+        pass
+    else:
+        if recursive:
+            os.makedirs(foldername)
+        else:
+            os.mkdir(foldername)

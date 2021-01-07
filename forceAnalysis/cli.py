@@ -19,15 +19,20 @@ def main(ctx, verbose):
 
 @main.command(context_settings=CONTEXT_SETTINGS)
 @click.argument('subject')
+@click.option('overwrite_csv_files')
 @click.pass_context
 
 
 def assemble_force_data(_, *args, **kwargs):
     """Reads in the given list of .csv files for the subject and assembled the data.
-    Options \n
+    Arguments \n
     ---------- \n
     subject : string \n
     \tString either "lizards" or "magneto" \n
+    Options \n
+    ---------- \n
+    overwrite_csv_files: boolean \n
+    \tBoolean either True or False. Default: True. determine if to overwrite the csv data files for every run
     """
     from forceAnalysis.operations import assemble_data
     assemble_data.assemble(*args, **kwargs)
