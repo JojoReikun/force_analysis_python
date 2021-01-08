@@ -1,0 +1,167 @@
+Gait: Cruise control (= timed walking sequence) linear cruise x velocity = 0.5
+Friction Rings: attached to all feet
+BOTA Force Sensors: attached to FR and HR (weight per sensor 120g, 1 leg almost 1kg)
+Experiment: Magneto climbs on the blue continuous surface at 90°
+Room Temperature: 26-28°C
+footfall pattern: FR=AR, FL=AL, HL=BL, HR=BR
+Magneto always placed as good as possible to vertical alignment as start position if not stated otherwise
+
+DATA COLLECTION ON FR----------------------------------------------------------
+BIAS!:
+Fx: 45
+Fy: -11
+Fz: -2
+Mx: 0.7
+My: -0.3
+Mz: -0.1
+Run1: 12:06pm
+          first foot FR, FL, HL
+          failed after 3 steps (error: lost contact of FR foot)
+          => not saved
+Run2: 12:12pm
+          first foot FR, FL, HL, HR
+          failed after 4 steps (didn't attach HR)
+CHANGE: moved target tip position of all feet from 20 to 25 (cm) -->
+        y distance from centre to foot tip -->
+        feet parallel aligned to the wall from the beginning
+Run3: 12:18pm
+          3 complete cycles
+CHANGE: order of footfall pattern to FR, HL, FL, HR
+Run4: 12:24pm
+          HL, FR (=> wrong footfall order)
+          failed after two steps (didn't attach FR)
+CHANGE: corrected foot order to previous thought to be FR, HL, FL, HR
+Run5: 12:30pm
+          FR, HR, FL
+          failed after 3 steps (didn't attach FL)
+Run6: 12:39pm
+          failed with FR
+HOMED entire robot on "station": FL seems to be not parallel to the wall
+The way the gait works is that a forward speed is defined, the red "goal points"
+therefore constantly move forward. This means that depending on the order of the footfall
+the "reach" for one leg might differ to another one. Currently the red dot shape is
+a square. Changing this shape might lead to gaits with less wide stances, although when
+making it rectangular Magneto would have to tilt the body to reach the position
+(what lizards do with spine bending).
+Run7: 12:59pm
+          AR=1, BR=3, BL=0, AL=2
+          failed after complete cycle at FL (didn't attach)
+CHANGE: pose negation phase starts and ends adjusted to new foot order. Likely to have caused FL to stuff up
+Run8: 1:04pm (video recorded by Chris, phone)
+          FR, HL, HR, FL
+          failed after 1 complete cycle and 3 steps: FR detached when FL was about to move
+          recorded testing after running (in air and on ground),
+          therefore only start of file interesting (big file)
+
+SYSTEMATICALLY VARY DIRECTION OF CLIMBING:
+CHANGE: linear cruise x velocity reduced to = 0.25 --> smaller steps
+CHANGE: set footfall pattern back to original cycle pattern
+Run9: 1:18pm (video recorded by Chris, phone)
+          FR, FL
+          failed after FL detached, FR lost contact + FR COXA failed
+Run10: 1:22pm (video recorded by Chris, phone)
+          FR, FL, HL, HR, FR, FL, HL, HR paused FR, FL, HL, HR
+          3 complete cycles
+Run11: 1:26pm (video recorded by Chris, phone)
+          FR, FL, HL, HR, FR, FL, HL, HR, FR, FL, HL, HR
+          3 complete cycles
+TEST: systematically change the start orientation on the wall (differ from vertical)
+Run12: 1:29pm - start position roughly 10 deg rotated left (video recorded by Chris, phone)
+          FR, FL, HL, HR, FR, FL, HL, HR, FR, FL, HL, HR
+          3 complete cycles
+          observation: doesn't climb much distance anymore compared to vertical orientation
+Run13: 1:35pm - start position roughly 10 deg rotated right (video recorded by Chris, phone)
+          FR, FL, HL, HR, FR, FL, HL, HR, FR, FL, HL, HR
+          3 complete cycles
+
+Run14: 1:40pm Gait in the air (FR forces)
+          1 complete cycles
+Run15: 1:42pm Gait on the ground (FR forces)
+          2 complete cycles
+
+
+DATA COLLECTION ON HR----------------------------------------------------------
+UNBIASED!
+linear cruise x velocity = 0.25
+original footfall pattern
+vertical start orientation if not stated otherwise
+
+Run16: 2:03pm Gait in the air (HR forces)
+          1 complete cycles
+Run17: 2:05pm Gait on the ground (HR forces)
+          2 complete cycles
+
+Run18: 2:35pm
+          FR, FL, HL, HR, FR, FL, HL, HR, FR, FL, HL, HR
+          3 complete cycles
+Run 19: 2:37pm
+          FR, FL, HL, HR, FR, FL, HL, HR, FR, FL, HL, HR
+          3 complete cycles
+Run20: 2:39pm
+          FR, FL, HL, HR, FR, FL, HL, HR, FR, FL, HL, HR
+          3 complete cycles
+TEST: systematically change the start orientation on the wall (differ from vertical)
+Run21: 2:41pm - start position roughly 10 deg rotated left
+          FR, FL, HL, HR, FR, FL, HL, HR, FR, FL, HL, HR + extra step
+          3 complete cycles
+          observation: doesn't climb much distance anymore compared to vertical orientation
+Run 22: 2:43pm - start position roughly 10 deg rotated right
+          FR, FL, HL, HR, FR, FL, HL, HR, FR, FL, HL, HR
+          3 complete cycles
+
+SYSTEMATICALLY VARY SPEED:
+DATA COLLECTION ON HR----------------------------------------------------------
+UNBIASED!
+linear cruise x velocity = 0.5
+vertical start direction if not stated otherwise
+
+Run23: 2:48pm (still old speed 0.25 but good run, Chris video)
+Run24: 2:51pm (Chris video, now new speed 0.5)
+          FR, FL, HL
+          failed when HR detached, then FL lost contact
+Run25: 2:52pm
+          FR, FL, HL, HR, FR, FL, HL, HR, FR, FL, HL, HR
+          3 complete cycles
+Run26: 2:55pm
+          FR, FL, HL, HR, FR, FL, HL, HR, FR, FL, HL, HR
+          3 complete cycles
+
+DATA COLLECTION ON HR----------------------------------------------------------
+UNBIASED!
+linear cruise x velocity = 0.75 (max 1.0)
+vertical start direction if not stated otherwise
+Run27: 2:57pm (Chris video)
+          FR, FL, HL, HR
+          failed after failing to make contact with FR, entire robot came off
+Run28: 3:03pm
+          FR, FL, HL, HR
+          failed due to insufficient attachment of FR
+CHANGE: step_frequency reconfigured from 0.5 to 0.75, because the points were moving away too fast,
+therefore only swing phase time changed before because motors have to cover more distance in less time
+not so stance phase time.
+Run29: 3:07pm
+          FR, FL, HL, HR, FR
+          failed due to insufficient attachment of FL
+CHANGE: step_frequency reconfigured from 0.75 to 1.0 (max 2.0)
+Run30: 3:10pm (Chris video)
+          FR, FL, HL, HR, FR
+          failed due to insufficient attachment of FL
+          Still reaching, it seems to move target points even faster when increasing step_frequency?
+CHANGE: change x velocity back to 0.5, leave frequency at 1.0
+Run31: 3:12pm
+          FR, FL, HL, HR, FR, FL, HL, HR, FR, FL, HL, HR
+          3 complete cycles
+          Still climbs fast but reaching less
+CHANGE: change x velocity back to 0.25, leave frequency at 1.0
+Run32: 3:14pm
+          FR, FL, HL, HR, FR, FL, HL, HR, FR, FL, HL, HR + 2 steps
+          3 complete cycles
+          Still climbs fast but reaching even less
+-----
+SCREENSHOT from velocity 1 and frequency 1 (last step completes just before red point exists foot work area)
+x velocity changes how far the red dot is from the foot point (1 being front tip, 0 walking on the spot, -1 being back tip=walking backward)
+-----
+CHANGE: x velocity -0.5, step_frequency back to original 0.5
+Run33: 3:20pm (backward walking ~ head-down climbing)
+          FR, FL, HL, HR, FR, FL, HL, HR, FR, FL, HL
+          successfull, stopped because running out of walk space
