@@ -46,13 +46,13 @@ def read_in_files_lizards():
     return
 
 
-def assemble(subject):
+def assemble(subject, overwrite_csv_files):
     print(subject)
     if subject == "magneto":
         # read in all files that match defined string patterns to not import all bag topics
         # creates a dict with several files (csv topics) for each element in magneto_patterns.keys()
         filedict = read_in_files_magneto()
-        magneto_data_assembly(filedict)
+        magneto_data_assembly(filedict, overwrite_csv_files)
 
     elif subject == "lizards":
         filedict = read_in_files_lizards()

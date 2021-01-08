@@ -15,11 +15,14 @@ def main(ctx, verbose):
         click.echo('forceAnalysis')
         click.echo(main.get_help(ctx))
 
+## DATA ASSEMBLY
 ##################################################################################
 
 @main.command(context_settings=CONTEXT_SETTINGS)
 @click.argument('subject')
-@click.option('overwrite_csv_files')
+@click.option('overwrite_csv_files',
+              default=True,
+              help='determines if csv files should be created and saved. If True, plots that exist already will be overwritten.')
 @click.pass_context
 
 
@@ -36,3 +39,45 @@ def assemble_force_data(_, *args, **kwargs):
     """
     from forceAnalysis.operations import assemble_data
     assemble_data.assemble(*args, **kwargs)
+
+
+## PLOT FORCES:
+##################################################################################
+
+@main.command(context_settings=CONTEXT_SETTINGS)
+@click.option('overwrite_plots',
+              default=True,
+              help='determines if plots should be created and saved. If True, plots that exist already will be overwritten.')
+@click.pass_context
+
+
+def plot_forces(_, *args, **kwargs):
+    """Reads in the list of assembled.csv files and plots the force data
+    Options \n
+    ---------- \n
+    overwrite_csv_files: boolean \n
+    \tBoolean either True or False. Default: True. determine if to overwrite the plots
+    """
+    from forceAnalysis.operations import plot_forces
+    plot_forces.plot_force_data(*args, **kwargs)
+
+
+## PLOT IMU:
+##################################################################################
+
+@main.command(context_settings=CONTEXT_SETTINGS)
+@click.option('overwrite_plots',
+              default=True,
+              help='determines if plots should be created and saved. If True, plots that exist already will be overwritten.')
+@click.pass_context
+
+
+def plot_imu(_, *args, **kwargs):
+    """Reads in the list of assembled.csv files and plots the force data
+    Options \n
+    ---------- \n
+    overwrite_csv_files: boolean \n
+    \tBoolean either True or False. Default: True. determine if to overwrite the plots
+    """
+    from forceAnalysis.operations import plot_imu_data
+    plot_imu_data.plot_imu(*args, **kwargs)

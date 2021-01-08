@@ -196,6 +196,7 @@ def fill_file_data(filedict):
     from forceAnalysis.utils import auxiliaryfunctions
 
     for n in range(len(list(filedict.values())[0])):  # loops through number of files
+        print("NUMBER OF FILES: ", len(list(filedict.values())[0]), "\n")
         # contains all data for one run
         run_data_dict = {}
 
@@ -208,7 +209,7 @@ def fill_file_data(filedict):
         columnnames = []
         for topic in list(filedict.keys()):
             # TODO: check order of loops and that run_data_dict actually contains all topics from 1 run
-            print("TOPIC: {} ".format(topic))
+            print("TOPIC: {} ".format(topic), "of topics: {}".format(list(filedict.keys())))
 
             # read the file of the current run, which belongs to topic
             # instead of using n make sure the file fits the run number
@@ -216,6 +217,8 @@ def fill_file_data(filedict):
             print("file: ", file)
 
             data = pd.read_csv(file)
+
+            # count rows: data_rows_count = data.shape[0]
 
             # drop empty rows in df:
             data.dropna(axis=0)
@@ -231,42 +234,55 @@ def fill_file_data(filedict):
 
             run_data_dict[topic] = sub_topic_dict
 
-            #print("run_data_dict: \n", "{" + "\n".join("{!r}: {!r},".format(k, v) for k, v in run_data_dict.items()) + "}")
+        #print("run_data_dict: \n", "{" + "\n".join("{!r}: {!r},".format(k, v) for k, v in run_data_dict.items()) + "}")
 
-            # save run_data_dict:
-            filename = run_number + "_assembled"
-            # convert dict to data frame:
-            # determine the longest column in run_data_dict.values() use that for df
-            for topic in list(run_data_dict.values()):  # list of dicts with the subtopics
-                old_max_length = 0
-                for subname, subtopic in topic.items():   # list with data for every subtopic
+        # save run_data_dict:
+        filename = run_number + "_assembled"
+        # convert dict to data frame:
+        # determine the longest column in run_data_dict.values() use that for df
+        old_max_length = 0
+        for topic in list(run_data_dict.values()):  # list of dicts with the subtopics
+            for subname, subtopic in topic.items():   # list with data for every subtopic
+                #print("subname: ", subname, "\nsubtopic: ", subtopic)
+                columnnames.append(subname)
 
-                    print("subname: ", subname, "\nsubtopic: ", subtopic)
-                    columnnames.append(subname)
+                #print("old_max_length: ", old_max_length)
+                max_length = len(subtopic)
+                if old_max_length > max_length:
+                    max_length = old_max_length
+                old_max_length = max_length
+        #print("max_length: ", max_length)
 
-                    #print("old_max_length: ", old_max_length)
-                    max_length = len(subtopic)
-                    if old_max_length > max_length:
-                        max_length = old_max_length
-                    old_max_length = max_length
+        #print("columnnames: ", columnnames)
+        run_data_df = pd.DataFrame(columns=columnnames, index=range(max_length))
+        #print("run_data_df: \n", run_data_df)
+        # TODO: fill up dataframe:
+        for m in range(max_length):
+            #print("m: ", m)
+            new_row = []
+            for subdict in list(run_data_dict.values()):
+                for subtopic, subvalues in subdict.items():
+                    if len(subvalues) > m:
+                        new_row.append(subvalues[m])
+                    else:
+                        new_row.append(np.nan)
+            #print("new_row: ", new_row)
+            run_data_df.loc[m] = new_row
+        #print("run_data_df: ", run_data_df)
 
-            print("columnnames: ", columnnames)
-            run_data_df = pd.DataFrame(columns=columnnames, index=range(max_length))
-            print("run_data_df: \n", run_data_df)
-            # TODO: fill up dataframe:
+        path = os.path.join(os.getcwd(), "assembled_csv")
+        auxiliaryfunctions.attempttomakefolder(path)
+        run_data_df.to_csv(os.path.join(path, "{}.csv".format(filename)), index=True, header=True)
 
-
-            path = os.path.join(os.getcwd(), "assembled_csv")
-            auxiliaryfunctions.attempttomakefolder(path)
-            run_data_df.to_csv(os.path.join(path, "{}.csv".format(filename)), index=True, header=True)
-
-            magneto_raw_dict[run_number] = run_data_dict
+        magneto_raw_dict[run_number] = run_data_dict
     # print("\n\n------------------------------\n\n",
     #       "magneto_raw_dict: \n", "{" + "\n".join("{!r}: {!r},".format(k, v) for k, v in magneto_raw_dict.items()) + "}")
     return
 
 
-def magneto_data_assembly(filedict):
+def magneto_data_assembly(filedict, overwrite_csv_files):
     print("\nmagneto data assembly")
-    fill_file_data(filedict)
+    if overwrite_csv_files == True:
+        # only read in files and assemble data if overwrite is True
+        fill_file_data(filedict)
     return
