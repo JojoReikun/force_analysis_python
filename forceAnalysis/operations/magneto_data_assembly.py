@@ -195,41 +195,67 @@ def fill_file_data(filedict):
     ### IMPORTS:
     from forceAnalysis.utils import auxiliaryfunctions
 
-    for topic in list(filedict.keys()):
-        # TODO: check order of loops and that run_data_dict actually contains all topics from 1 run
-        print("TOPIC: {} ".format(topic))
-        for file in filedict[topic]:    # loops through list of files for topic
-            # contains all data for one run
-            run_data_dict = {}
+    for n in range(len(list(filedict.values())[0])):  # loops through number of files
+        # contains all data for one run
+        run_data_dict = {}
+
+        run = list(filedict.values())[0][n]    # takes the n file of the first topic to get the run number
+        print("\n ---- run: ", run)
+        run_number = run.rsplit(os.sep, 1)[1]
+        run_number = run_number.split("_", 1)[0]
+        print("run number: {}".format(run_number))
+
+        columnnames = []
+        for topic in list(filedict.keys()):
+            # TODO: check order of loops and that run_data_dict actually contains all topics from 1 run
+            print("TOPIC: {} ".format(topic))
+
+            # read the file of the current run, which belongs to topic
+            # instead of using n make sure the file fits the run number
+            file = [f for f in filedict[topic] if run_number in f][0]
+            print("file: ", file)
 
             data = pd.read_csv(file)
 
             # drop empty rows in df:
             data.dropna(axis=0)
 
-            run_number = file.rsplit(os.sep, 1)[1]
-            run_number = run_number.split("_", 1)[0]
-            print("run number: {}".format(run_number))
-
+            # creates a new empty dict which is filled with the subtopics, e.g. force_x, force_y, force_z for topic force
+            sub_topic_dict = {}
             for item in range(len(magneto_columnnames_dict[topic])):
+                #print("item: ", item)
                 columnname = list(magneto_columnnames_dict[topic].keys())[item]
-
                 #print("columnname: ", columnname)
-                run_data_dict[columnname] = data.iloc[:, list(magneto_columnnames_dict[topic].values())[item]]
+                sub_topic_dict[columnname] = data.iloc[:, list(magneto_columnnames_dict[topic].values())[item]].values
+            #print("subtopic dict: ", sub_topic_dict)
 
-            print("run_data_dict: \n", "{" + "\n".join("{!r}: {!r},".format(k, v) for k, v in run_data_dict.items()) + "}")
+            run_data_dict[topic] = sub_topic_dict
+
+            #print("run_data_dict: \n", "{" + "\n".join("{!r}: {!r},".format(k, v) for k, v in run_data_dict.items()) + "}")
 
             # save run_data_dict:
             filename = run_number + "_assembled"
             # convert dict to data frame:
             # determine the longest column in run_data_dict.values() use that for df
-            for value in list(run_data_dict.values()):
-                old_max_length = len(value)
-                max_length = len(value)
-                if old_max_length > max_length:
-                    max_length = old_max_length
+            for topic in list(run_data_dict.values()):  # list of dicts with the subtopics
+                old_max_length = 0
+                for subname, subtopic in topic.items():   # list with data for every subtopic
 
-            run_data_df = pd.DataFrame(columns=list(run_data_dict.items()), index=range(max_length))
+                    print("subname: ", subname, "\nsubtopic: ", subtopic)
+                    columnnames.append(subname)
+
+                    #print("old_max_length: ", old_max_length)
+                    max_length = len(subtopic)
+                    if old_max_length > max_length:
+                        max_length = old_max_length
+                    old_max_length = max_length
+
+            print("columnnames: ", columnnames)
+            run_data_df = pd.DataFrame(columns=columnnames, index=range(max_length))
+            print("run_data_df: \n", run_data_df)
+            # TODO: fill up dataframe:
+
+
             path = os.path.join(os.getcwd(), "assembled_csv")
             auxiliaryfunctions.attempttomakefolder(path)
             run_data_df.to_csv(os.path.join(path, "{}.csv".format(filename)), index=True, header=True)
