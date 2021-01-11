@@ -13,7 +13,6 @@ import os
 # failreason describes if the failedfoot did not attach when it was its turn or another failedfoot detached while the other moved
 # if failed variables are all NAN, the trial was complete (3 complete cycles)
 run_info = {'run2': {'velocity': 0.5,
-
                      'step_frequency': 0.5,
                      'footfallpattern': ['FR', 'FL', 'HL', 'HR'],
                      'direction': 0,
@@ -403,26 +402,26 @@ def fill_trial_note_data(path, run_number_runs):
     # filter for "_assembled" in filename:
     filelist = [file for file in filelist if "_assembled" in file]
 
-    print("filelist: ", filelist)
+    #print("filelist: ", filelist)
 
     # read in files one by one and add trial notes to dataframe:
     for file in filelist:
         run_number = file.rsplit(os.sep, 1)[1]
         run_number = run_number.split("_", 1)[0]
-        print("\n--- run: ", run_number)
+        #print("\n--- run: ", run_number)
         data = pd.read_csv(file)
 
         rows_count = data.shape[0]
-        print("rows_count: ", rows_count)
+        #print("rows_count: ", rows_count)
         # TODO: add column to dataframe with trial info belonging to run_number
         # check if run has entry in run_info dict
         if run_number in run_number_runs:
             for k, v in run_info[run_number].items():
-                print(k, v)
+                #print(k, v)
                 appendlist = [v] * rows_count
                 data[k] = appendlist
 
-        print("\n", data.head(), "\n")
+        #print("\n", data.head(), "\n")
         filename = run_number + "_assembled"
         data.to_csv(os.path.join(path, "{}.csv".format(filename)), index=False, header=True)
 
@@ -441,10 +440,10 @@ def fill_file_data(filedict, path):
         run_data_dict = {}
 
         run = list(filedict.values())[0][n]  # takes the n file of the first topic to get the run number
-        print("\n ---- run: ", run)
+        #print("\n ---- run: ", run)
         run_number = run.rsplit(os.sep, 1)[1]
         run_number = run_number.split("_", 1)[0]
-        print("run number: {}".format(run_number))
+        #print("run number: {}".format(run_number))
 
         columnnames = []
         for topic in list(filedict.keys()):
@@ -454,7 +453,7 @@ def fill_file_data(filedict, path):
             # read the file of the current run, which belongs to topic
             # instead of using n make sure the file fits the run number
             file = [f for f in filedict[topic] if run_number in f][0]
-            print("file: ", file)
+            #print("file: ", file)
 
             data = pd.read_csv(file)
 
@@ -518,6 +517,58 @@ def fill_file_data(filedict, path):
     return
 
 
+def interpolate_data(path):
+    """
+    force, imu, and foot position data was sampled in different frequencies.
+    Reduce data points of force data to same length of foot position data points.
+    :return:
+    """
+    from glob import glob
+    from scipy.interpolate import interp1d
+    import matplotlib.pyplot as plt
+
+    filelist = []
+    for file in glob(os.path.join(path, "*.csv")):
+        filelist.append(file)
+
+    # filter for "_assembled" in filename:
+    filelist = [file for file in filelist if "_assembled" in file]
+
+    # add interpolated force columns
+    for file in filelist:
+        data = pd.read_csv(file)
+
+        run_number = file.rsplit(os.sep, 1)[1]
+        run_number = run_number.split("_", 1)[0]
+
+        filename = run_number + "_assembled"
+        #TODO: fix reduction of data point. Currently lost shape, seems to only take start data
+        sensorfoot = data['sensorfoot'][1]
+        length_of_foot_pos_data = data[f'{sensorfoot}_pos_x'].count()
+        length_of_force_data = data['force_x'].count()
+        xnew = np.linspace(0, length_of_foot_pos_data, num=length_of_foot_pos_data, endpoint=True)
+        f_force_x = interp1d(range(length_of_force_data), data['force_x'])
+        f_force_y = interp1d(range(length_of_force_data), data['force_y'])
+        f_force_z = interp1d(range(length_of_force_data), data['force_z'])
+        ynew_force_x = list(f_force_x(xnew))
+        ynew_force_y = list(f_force_y(xnew))
+        ynew_force_z = list(f_force_z(xnew))
+
+        #print("interpolated z force: ", ynew_force_z)
+
+        nan_list = [np.nan]*(length_of_force_data - len(ynew_force_z))
+
+
+        data["interp_force_x"] = ynew_force_x + (nan_list)
+        data["interp_force_y"] = ynew_force_y + (nan_list)
+        data["interp_force_z"] = ynew_force_z + (nan_list)
+        #print(data.head())
+
+        data.to_csv(os.path.join(path, "{}.csv".format(filename)), index=False, header=True)
+
+    return
+
+
 def create_summary_file(path, run_number_runs, path_summary):
     """
         this function fills in the run specific data from the notes, e.g. velocity, sensorfoot etc.
@@ -527,7 +578,7 @@ def create_summary_file(path, run_number_runs, path_summary):
     ### IMPORTS:
     from forceAnalysis.utils import auxiliaryfunctions
     from glob import glob
-
+    print("creating summary files ... ")
     pd.set_option('max_columns', None)
 
     filelist = []
@@ -548,9 +599,10 @@ def create_summary_file(path, run_number_runs, path_summary):
     i = 1
     file = filelist[i]
     for i, file in zip(range(len(filelist)), filelist):
+        print(f"Progress: {i}/{len(filelist)}")
         run_number = file.rsplit(os.sep, 1)[1]
         run_number = run_number.split("_", 1)[0]
-        print("\n--- run: ", run_number)
+        #print("\n--- run: ", run_number)
 
         data = pd.read_csv(file)
 
@@ -584,7 +636,7 @@ def create_summary_file(path, run_number_runs, path_summary):
             summary_data['max_force_z'][i] = np.mean(sorted(list(data['force_z']))[-3])
 
 
-    print("\n", summary_data)
+    #print("\n", summary_data)
 
     #save summary data:
     summary_data.to_csv(os.path.join(path_summary, "summary_data.csv"))
@@ -617,5 +669,6 @@ def magneto_data_assembly(filedict, overwrite_csv_files):
 
     if os.listdir(path) != []:
         create_summary_file(path, run_number_runs, path_summary)
+        interpolate_data(path)
 
     return

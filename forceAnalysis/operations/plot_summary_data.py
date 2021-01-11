@@ -19,10 +19,8 @@ def reorder_data(data):
         if i % 3 == 0:
             row += 1
             print("row upped: ", row)
-
+            # TODO
         # fill in dataframe_reordered
-
-
 
     return data_reordered
 
