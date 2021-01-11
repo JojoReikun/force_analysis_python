@@ -540,7 +540,8 @@ def create_summary_file(path, run_number_runs, path_summary):
     # create summary data frame:
     summarycolumns = ['run', 'velocity', 'step_frequency', 'footfallpattern', 'direction', 'surface', 'sensorfoot',
                       'failedstep', 'failedfoot', 'failreason', 'forcesbiased',
-                      'max_force_x', 'max_force_y', 'max_force_z']
+                      'max_force_x', 'max_force_y', 'max_force_z', 'mean_force_x', 'mean_force_y', 'mean_force_z',
+                      'min_force_x', 'min_force_y', 'min_force_z']
     summary_data = pd.DataFrame(columns=summarycolumns, index=range(len(filelist)))
 
     # read in files one by one and add trial notes to dataframe:
@@ -557,6 +558,13 @@ def create_summary_file(path, run_number_runs, path_summary):
         summary_data['max_force_x'][i] = np.mean(sorted(list(data['force_x']), reverse=True)[0:3])
         summary_data['max_force_y'][i] = np.mean(sorted(list(data['force_y']), reverse=True)[0:3])
         summary_data['max_force_z'][i] = np.mean(sorted(list(data['force_z']), reverse=True)[0:3])
+        summary_data['mean_force_x'][i] = np.mean(data['force_x'])
+        summary_data['mean_force_y'][i] = np.mean(data['force_y'])
+        summary_data['mean_force_z'][i] = np.mean(data['force_z'])
+        summary_data['min_force_x'][i] = np.mean(sorted(list(data['force_x']), reverse=False)[0:3])
+        summary_data['min_force_y'][i] = np.mean(sorted(list(data['force_y']), reverse=False)[0:3])
+        summary_data['min_force_z'][i] = np.mean(sorted(list(data['force_z']), reverse=False)[0:3])
+
 
         if run_number in run_number_runs:
             # get summary values:
