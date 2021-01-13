@@ -7,6 +7,9 @@ def plot_force_data_and_position_data(overwrite_plots):
     from glob import glob
     from forceAnalysis.utils import auxiliaryfunctions
 
+    # TODO: Fix again and add animation module again :(
+    # https://pythonforundergradengineers.com/piston-motion-with-python-matplotlib.html
+
     feet = ['FR', 'FL', 'HR', 'HL']
 
     if overwrite_plots == True:
