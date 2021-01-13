@@ -350,34 +350,40 @@ run_info = {'run2': {'velocity': 0.5,
 # AL/FL: +x|+y|-z, AR/FR: +x|-y|-z, BL/HL: -x|+y|-z, BR/HR: -x|-y|-z
 magneto_columnnames_dict = {"force": {"force_x": 9,
                                       "force_y": 10,
-                                      "force_z": 11},
+                                      "force_z": 11,
+                                      "force_timestamp": 0},
                             "imu": {"imu_linacc_x": 19,
                                     "imu_linacc_y": 20,
-                                    "imu_linacc_z": 21},
+                                    "imu_linacc_z": 21,
+                                    "imu_timestamp": 0},
                             "FR_pos": {"FR_pos_x": 85,
                                        "FR_pos_y": 86,
                                        "FR_pos_z": 87,
                                        "FR_orient_x": 89,
                                        "FR_orient_y": 90,
-                                       "FR_orient_z": 91},
+                                       "FR_orient_z": 91,
+                                       "FR_timestamp": 0},
                             "FL_pos": {"FL_pos_x": 85,
                                        "FL_pos_y": 86,
                                        "FL_pos_z": 87,
                                        "FL_orient_x": 89,
                                        "FL_orient_y": 90,
-                                       "FL_orient_z": 91},
+                                       "FL_orient_z": 91,
+                                       "FL_timestamp": 0},
                             "HL_pos": {"HL_pos_x": 85,
                                        "HL_pos_y": 86,
                                        "HL_pos_z": 87,
                                        "HL_orient_x": 89,
                                        "HL_orient_y": 90,
-                                       "HL_orient_z": 91},
+                                       "HL_orient_z": 91,
+                                       "HL_timestamp": 0},
                             "HR_pos": {"HR_pos_x": 85,
                                        "HR_pos_y": 86,
                                        "HR_pos_z": 87,
                                        "HR_orient_x": 89,
                                        "HR_orient_y": 90,
-                                       "HR_orient_z": 91}
+                                       "HR_orient_z": 91,
+                                       "HR_timestamp": 0}
                             }  # force_x, force_y, force_z named "x", "y", "z" in csv file
 
 magneto_raw_dict = {}
@@ -495,7 +501,7 @@ def fill_file_data(filedict, path):
         # print("columnnames: ", columnnames)
         run_data_df = pd.DataFrame(columns=columnnames, index=range(max_length))
         # print("run_data_df: \n", run_data_df)
-        # TODO: different frequencies!:
+
         for m in range(max_length):
             # print("m: ", m)
             new_row = []
@@ -669,6 +675,6 @@ def magneto_data_assembly(filedict, overwrite_csv_files):
 
     if os.listdir(path) != []:
         create_summary_file(path, run_number_runs, path_summary)
-        interpolate_data(path)
+        #interpolate_data(path)
 
     return
