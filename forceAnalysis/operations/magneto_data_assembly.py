@@ -399,6 +399,8 @@ def fill_trial_note_data(path, run_number_runs):
     from forceAnalysis.utils import auxiliaryfunctions
     from glob import glob
 
+    print("\nfilling in >static< trial data...")
+
     pd.set_option('max_columns', None)
 
     filelist = []
@@ -411,7 +413,8 @@ def fill_trial_note_data(path, run_number_runs):
     #print("filelist: ", filelist)
 
     # read in files one by one and add trial notes to dataframe:
-    for file in filelist:
+    for i, file in enumerate(filelist):
+        print("Progress: ", i, "/", len(filelist))
         run_number = file.rsplit(os.sep, 1)[1]
         run_number = run_number.split("_", 1)[0]
         #print("\n--- run: ", run_number)
@@ -439,9 +442,10 @@ def fill_file_data(filedict, path):
     reads in file by file (run) and adds data to run_data_dict.
     Returns the path these files are saved to.
     """
+    print("\nfilling in file data ...")
 
     for n in range(len(list(filedict.values())[0])):  # loops through number of files
-        print("NUMBER OF FILES: ", len(list(filedict.values())[0]), "\n")
+        print("Progress: ", n, "/", len(list(filedict.values())[0]), "\n")
         # contains all data for one run
         run_data_dict = {}
 

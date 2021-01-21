@@ -110,6 +110,12 @@ def plot_summary(_, *args, **kwargs):
 @click.argument('overwrite_plots',
               default=True,
               help='determines if plots should be created and saved. If True, plots that exist already will be overwritten.')
+@click.argument('smoothing',
+              default=True,
+              help='if smoothing is true the foot position data of the sensor foot will be smoothed.')
+@click.argument('filtertype',
+              default='butter',
+              help='sets the type of filter to use for smoothing. Available are: "butter", "fft", "savgol"')
 @click.pass_context
 
 def plot_force_and_position(_, *args, **kwargs):

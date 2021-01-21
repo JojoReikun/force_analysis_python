@@ -10,11 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 feet = ['FR', 'FL', 'HL', 'HR']
-
-
-def init():
-    # initial plot
-    return
+COM = (0,0)
 
 
 def animate():
@@ -57,6 +53,11 @@ def animate_magneto(overwrite_plots):
 
                 colours = ['#e3433d', '#0b6ade', '#5bdea5', '#690612', '#150669', '#1c5239']
                 sn.set_style('whitegrid')
+
+                for n in range(len(FR_coordinates)):
+                    # set up plot figure:
+                    fig = plt.figure()
+                    ax = fig.add_subplot(aspect="equal", autoscale_on=False)
 
 
     return
