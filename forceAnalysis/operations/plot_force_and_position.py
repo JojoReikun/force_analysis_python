@@ -1,10 +1,46 @@
+def get_neutral_force_z(foot_smoothed, x_values, data_forces_and_pos):
+    """
+    This function is used on the smoothed foot data.
+    This function looks for the time when the sensorfoot is in the air (highest position spike = global max).
+    It then looks for the steepest slope before the global max.
+    Around that index 10 values are taken from the force_z data, to get an estimate of the "neutral" force_z.
+    :return:
+    df_extrema_filtered: contains the indices, the x and y values of the maxima and minima of the smoothed foot function
+    neutral_force_z
+    """
+    ### IMPORTS:
+    from forceAnalysis.utils import auxiliaryfunctions
+    import numpy as np
+
+    print("determining neutral force z...")
+
+    # find the highest gradient/steepest slope before the maximum
+    df_extrema_filtered = auxiliaryfunctions.find_all_max_and_min_of_function(x_values, foot_smoothed)
+    df_highest_max = df_extrema_filtered[df_extrema_filtered['y'] == max(df_extrema_filtered['y'])]
+
+    # find the inflection point before the global max, returns tuple of coords of inflection point
+    inflection_point = auxiliaryfunctions.find_inflection_point_before_highest_max(x_values, foot_smoothed, df_extrema_filtered)
+
+    # get 10 values around the inflection point of the z force:
+    # first find the closest x-value of the force to the interception point:
+    closest_forceZ = auxiliaryfunctions.find_closest_value(list(data_forces_and_pos['force_z']), inflection_point[0])
+    index_of_closest = list(data_forces_and_pos[data_forces_and_pos['force_z'] == closest_forceZ].index)
+
+    neutral_force_subset = data_forces_and_pos.loc[index_of_closest[0]-5:index_of_closest[0]+5, :]
+    neutral_force_mean = np.mean(list(neutral_force_subset['force_z']))
+    neutral_force_std = np.std(list(neutral_force_subset['force_z']))
+    print("number_of_forces: ", neutral_force_subset.shape[0], "\nmean: ", neutral_force_mean, "\nstd: ", neutral_force_std)
+
+    return df_extrema_filtered, df_highest_max, inflection_point, neutral_force_mean, neutral_force_std
+
+
 def smooth_foot_position(foot_pos_x, foot_timestamp, sample_spacing_foot, df_current_run_summary, filtertype):
     """
     takes the values for the x-position data of the sensorfoot and smoothes them using Savitzky-Golay filter
     or the butterworth low-pass filter
     filter: "savgol" or "butter"
     """
-    #IMPORTS:
+    ### IMPORTS:
     from scipy import signal
     from scipy import fft, ifft
     import matplotlib.pyplot as plt
@@ -14,7 +50,7 @@ def smooth_foot_position(foot_pos_x, foot_timestamp, sample_spacing_foot, df_cur
 
     x_values = list(foot_timestamp)
     if filtertype == "savgol":
-        y_values_savgol = signal.savgol_filter(foot_pos_x, 17, 3)  # iterable, windowlength
+        y_values_savgol = signal.savgol_filter(foot_pos_x, 111, 3)  # windowlength, filterorder
         return x_values, y_values_savgol
     elif filtertype == "fft":
         n = len(foot_timestamp)
@@ -73,12 +109,22 @@ def plot_force_data_and_position_data(overwrite_plots, smoothing, filtertype):
         if os.path.isdir(summary_path):
             summary_data = pd.read_csv(os.path.join(summary_path, "summary_data.csv"))
             data_vel_and_freq = summary_data[['run', 'velocity', 'step_frequency']]
+        else:
+            print("no summary_data folder. Run forceAnalysis.assemble() first.")
+
         if os.path.isdir(path):
             number_of_files = len(glob(os.path.join(path, "*.csv")))
+
+            if number_of_files == 0:
+                print("no files in assemble_csv found, run forceAnalysis.assemble() first.")
+                exit()
+
             for i, file in enumerate(glob(os.path.join(path, "*.csv"))):
                 print("Progress: ", i, "/", number_of_files)
+                # print("file: ", file)
 
                 data = pd.read_csv(file)
+                # print(data)
                 sensorfoot = data['sensorfoot'][1]
                 data_forces_and_pos = data[['force_x', 'force_y', 'force_z', 'FR_pos_x', 'FL_pos_x', 'HR_pos_x', 'HL_pos_x',
                                             'force_timestamp', 'imu_linacc_y', 'imu_timestamp', 'FR_timestamp', 'FL_timestamp',
@@ -88,8 +134,8 @@ def plot_force_data_and_position_data(overwrite_plots, smoothing, filtertype):
 
                 sample_spacing_foot = data_forces_and_pos['FR_timestamp'][5] - data_forces_and_pos['FR_timestamp'][4]
                 sample_spacing_force = data_forces_and_pos['force_timestamp'][5] - data_forces_and_pos['force_timestamp'][4]
-                #print("sample freq foot: ", sample_spacing_foot,
-                #      "\nsample freq force: ", sample_spacing_force)
+                # print("sample freq foot: ", sample_spacing_foot,
+                #       "\nsample freq force: ", sample_spacing_force)
 
                 #x_forces = range(data_forces_and_pos['force_x'].count())
 
@@ -105,9 +151,9 @@ def plot_force_data_and_position_data(overwrite_plots, smoothing, filtertype):
 
                 # get velocity and step_frequency of current run
                 df_current_run_summary = data_vel_and_freq.loc[data_vel_and_freq['run'] == run_number]
-                print(df_current_run_summary)
+                #print(df_current_run_summary)
 
-                print("run number: ", run_number, "min_x_pos: ", len(min_x_pos))
+                print("run number: ", run_number, "\nmin_x_pos: ", len(min_x_pos))
 
                 colours = ['#e3433d', '#0b6ade', '#5bdea5', '#690612', '#150669', '#1c5239']
                 sn.set_style('whitegrid')
@@ -146,6 +192,9 @@ def plot_force_data_and_position_data(overwrite_plots, smoothing, filtertype):
                     elif isinstance(sensorfoot_of_run, str) and sensorfoot_of_run == "HR":
                         x_values, foot_smoothed = smooth_foot_position(HR_pos_x, data_forces_and_pos['HR_timestamp'][:len(min_x_pos)], sample_spacing_foot, df_current_run_summary, filtertype=filtertype)
 
+                    ### get neutral Z FORCE:
+                    df_extrema_filtered, df_highest_max, inflection_point, neutral_force_mean, neutral_force_std = get_neutral_force_z(foot_smoothed=foot_smoothed, x_values=x_values, data_forces_and_pos=data_forces_and_pos)
+
                 fig, ax = plt.subplots()
                 #ax2 = ax.twiny()
                 # plot imu data:
@@ -164,6 +213,22 @@ def plot_force_data_and_position_data(overwrite_plots, smoothing, filtertype):
 
                 if smoothing == True and isinstance(sensorfoot_of_run, str):
                     sn.lineplot(x = x_values, y = foot_smoothed, label=f'{sensorfoot_of_run} pos {filtertype}', linewidth=1)
+                    sn.scatterplot(x='x', y='y', data=df_extrema_filtered, color='red')
+
+                    sn.scatterplot(x='x', y='y', data=df_highest_max,
+                                   color='green')
+                    plt.scatter(inflection_point[0], inflection_point[1],marker='o', color='black')
+                    if max(data_forces_and_pos['force_z']) < max(foot_smoothed):
+                        plt.vlines(inflection_point[0], ymin=min(data_forces_and_pos['force_z']), ymax=max(foot_smoothed), linewidth=0.8)
+                    else:
+                        plt.vlines(inflection_point[0], ymin=min(foot_smoothed), ymax=max(data_forces_and_pos['force_z']), linewidth=0.8)
+
+                    # plot the std of the mean z force as shady area:
+                    # x = np.arange(min(data_forces_and_pos['force_timestamp']), max(data_forces_and_pos['force_timestamp']), 100000000.0)
+                    # plt.fill_between(x, neutral_force_mean-neutral_force_std, neutral_force_mean+neutral_force_std, alpha=0.3)
+                    # plot the mean of the z force as horizontal line
+                    plt.hlines(neutral_force_mean, xmin=min(data_forces_and_pos['force_timestamp']), xmax=max(data_forces_and_pos['force_timestamp']), linewidth=0.8)
+
 
                 ax.set_xlabel("rosbag timesteps")
                 #ax2.set_xlabel("position timesteps")
@@ -173,5 +238,8 @@ def plot_force_data_and_position_data(overwrite_plots, smoothing, filtertype):
                 fig1.savefig(os.path.join(output_path, f'{run_number}_force_pos_plot.png'), dpi=300)
 
                 plt.show()
+
+        else:
+            print("no assembled_csv folder. Run forceAnalysis.assemble() first.")
 
     return

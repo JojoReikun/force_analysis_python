@@ -114,7 +114,7 @@ def plot_summary(_, *args, **kwargs):
               default=True,
               help='if smoothing is true the foot position data of the sensor foot will be smoothed.')
 @click.argument('filtertype',
-              default='butter',
+              default='savgol',
               help='sets the type of filter to use for smoothing. Available are: "butter", "fft", "savgol"')
 @click.pass_context
 
