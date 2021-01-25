@@ -76,7 +76,7 @@ def find_all_max_and_min_of_function(x_values, y_foot_smoothed):
     dy = np.diff(y_foot_smoothed)
     peaks, _ = find_peaks(y_foot_smoothed)
     peaks = [peak for peak in peaks]
-    #print("peaks: ", peaks)
+    print("peaks: ", peaks)
 
     sn.lineplot(x_values, y_foot_smoothed)
     extrema = {"index": [],
@@ -93,9 +93,29 @@ def find_all_max_and_min_of_function(x_values, y_foot_smoothed):
     df_extrema = pd.DataFrame(extrema)
 
     # remove "standing extrema":
-    df_extrema_three_max = df_extrema[df_extrema['y'] >= min(three_max_y)]
-    df_extrema_filtered = df_extrema[df_extrema['x'] >= min(df_extrema_three_max['x'])]
-    #df_extrema_filtered = pd.concat([df_extrema_filtered_1, df_extrema_filtered_2])
+    # if moving average of 1000 y values moves more than certain amount, include maximum:
+    ### OLD:
+    # df_extrema_three_max = df_extrema[df_extrema['y'] >= min(three_max_y)]
+    # df_extrema_filtered = df_extrema[df_extrema['x'] >= min(df_extrema_three_max['x'])]
+    ### NEW:
+    avg_window_length = 10
+    moving_average = []
+    keepers = []
+    #get the differences between subsequent frames in y_foot_smoothed:
+    differences = [m - n for n, m in zip(y_foot_smoothed, y_foot_smoothed[1:])]
+    print("len(y_foot_smoothed): ", len(y_foot_smoothed), "len(differences): ", len(differences))
+    for i in range(1, len(differences)):
+        if i <= len(y_foot_smoothed-avg_window_length):
+            moving_average = np.mean(np.abs(differences[i:(i + avg_window_length)]))
+            if i in peaks:
+                print("i: ", i, "moving_average: ", moving_average)
+        else:
+            moving_average = np.mean(np.abs(differences[len(differences)-avg_window_length:len(differences)]))
+        if i in peaks and moving_average > 0.015:
+            keepers.append(i)
+    print("keepers: ", keepers)
+    df_extrema_filtered = df_extrema[df_extrema['index'].isin(keepers)]
+
     #print(df_extrema_filtered)
 
     # testplot
