@@ -165,23 +165,35 @@ def find_step_intervals(df_extrema_filtered, y_foot_smoothed, keepers2, three_ma
     print(indices_three_max)
 
     # TODO: only get the swing phases, so just look through maxima in three_max_keepers and get the min before
-    # # check if there is another maximum before the first of the highest:
-    # if indices_three_max[0] == keepers2[0]:
-    #     print("there is no other maximum before the first of the highest")
-    #     # TODO:
-    #     # get the minimum before the highest maximum and save that as the swing phase interval,
-    #     # do the same for the next highest max in three_max_keepers
-    #
-    # elif indices_three_max[0] > keepers2[0]:
-    #     counter = 0
-    #     for i in range(len(keepers2)):
-    #         if keepers2[i] == indices_three_max[0]:
-    #             counter = i
-    #             break
-    #     print(f"there are {counter} maxima before the highest maximum")
-    #
-    #     # TODO:
-    #     # find out if first maximum is a fake or real
+
+    # check if there is another maximum before the first of the highest:
+    swings = {}
+    if indices_three_max[0] == keepers2[0]:
+        print("there is no other maximum before the first of the highest")
+        for i, p in enumerate(three_max_keepers):
+            if i == 0:
+                low_window = df_extrema_filtered[ :p, 'index']
+                low_index = min(low_window['y']).index
+                low_x = df_extrema_filtered.loc[low_index, 'x']
+                low_y = df_extrema_filtered.loc[low_index, 'y']
+                swing = ()
+
+            elif i > 0:
+                swing = ()
+                # instead of using index 0 as minimum limit, use max before high
+                # TODO: think about if to get indices or x and y values of lower and upper swing phase limit...
+                # if len(three_max_keepers) then fill up rest with np.nan points, so that each foot has 3 swing phases?
+
+    elif indices_three_max[0] > keepers2[0]:
+        counter = 0
+        for i in range(len(keepers2)):
+            if keepers2[i] == indices_three_max[0]:
+                counter = i
+                break
+        print(f"there are {counter} maxima before the highest maximum")
+
+        # TODO:
+        # go from highest max to max before
 
     return
 
