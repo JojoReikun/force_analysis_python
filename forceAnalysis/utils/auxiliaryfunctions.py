@@ -168,6 +168,7 @@ def find_step_intervals(df_extrema_filtered, y_foot_smoothed, keepers2, three_ma
 
     # check if there is another maximum before the first of the highest:
     swings = {}
+    # loop through indices_three_max first, then test for following if condition - only first case is different
     if indices_three_max[0] == keepers2[0]:
         print("there is no other maximum before the first of the highest")
         for i, p in enumerate(three_max_keepers):
