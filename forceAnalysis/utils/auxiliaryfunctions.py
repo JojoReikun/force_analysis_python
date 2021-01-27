@@ -164,16 +164,24 @@ def find_step_intervals(df_extrema_filtered, y_foot_smoothed, keepers2, three_ma
     indices_three_max = sorted(indices_three_max, reverse=False)    # sort indices of three max from low to high
     print(indices_three_max)
 
-    # check if there is another maximum before the first of the highest:
-    if indices_three_max[0] == keepers2[0]:
-        print("there is no other maximum before the first of the highest")
-    elif indices_three_max[0] > keepers2[0]:
-        counter = 0
-        for i in range(len(keepers2)):
-            if keepers2[i] == indices_three_max[0]:
-                counter = i
-                break
-        print(f"there are {counter} maxima before the highest maximum")
+    # TODO: only get the swing phases, so just look through maxima in three_max_keepers and get the min before
+    # # check if there is another maximum before the first of the highest:
+    # if indices_three_max[0] == keepers2[0]:
+    #     print("there is no other maximum before the first of the highest")
+    #     # TODO:
+    #     # get the minimum before the highest maximum and save that as the swing phase interval,
+    #     # do the same for the next highest max in three_max_keepers
+    #
+    # elif indices_three_max[0] > keepers2[0]:
+    #     counter = 0
+    #     for i in range(len(keepers2)):
+    #         if keepers2[i] == indices_three_max[0]:
+    #             counter = i
+    #             break
+    #     print(f"there are {counter} maxima before the highest maximum")
+    #
+    #     # TODO:
+    #     # find out if first maximum is a fake or real
 
     return
 
