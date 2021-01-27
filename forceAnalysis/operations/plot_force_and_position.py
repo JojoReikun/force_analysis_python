@@ -1,4 +1,4 @@
-def get_neutral_force_z(foot_smoothed, x_values, data_forces_and_pos):
+def get_neutral_force_z(foot_smoothed, x_values, data_forces_and_pos, run_number):
     """
     This function is used on the smoothed foot data.
     This function looks for the time when the sensorfoot is in the air (highest position spike = global max).
@@ -15,7 +15,7 @@ def get_neutral_force_z(foot_smoothed, x_values, data_forces_and_pos):
     print("determining neutral force z...")
 
     # find the highest gradient/steepest slope before the maximum
-    df_extrema_filtered = auxiliaryfunctions.find_all_max_and_min_of_function(x_values, foot_smoothed)
+    df_extrema_filtered, keepers2, three_max = auxiliaryfunctions.find_all_max_and_min_of_function(x_values, foot_smoothed, run_number)
     df_highest_max = df_extrema_filtered[df_extrema_filtered['y'] == max(df_extrema_filtered['y'])]
 
     # find the inflection point before the global max, returns tuple of coords of inflection point
@@ -23,13 +23,17 @@ def get_neutral_force_z(foot_smoothed, x_values, data_forces_and_pos):
 
     # get 10 values around the inflection point of the z force:
     # first find the closest x-value of the force to the interception point:
-    closest_forceZ = auxiliaryfunctions.find_closest_value(list(data_forces_and_pos['force_z']), inflection_point[0])
-    index_of_closest = list(data_forces_and_pos[data_forces_and_pos['force_z'] == closest_forceZ].index)
+    closest_forceZ = auxiliaryfunctions.find_closest_value(list(data_forces_and_pos['force_timestamp']), inflection_point[0])
+    index_of_closest = list(data_forces_and_pos[data_forces_and_pos['force_timestamp'] == closest_forceZ].index)
 
     neutral_force_subset = data_forces_and_pos.loc[index_of_closest[0]-5:index_of_closest[0]+5, :]
     neutral_force_mean = np.mean(list(neutral_force_subset['force_z']))
     neutral_force_std = np.std(list(neutral_force_subset['force_z']))
     print("number_of_forces: ", neutral_force_subset.shape[0], "\nmean: ", neutral_force_mean, "\nstd: ", neutral_force_std)
+
+
+    ## find the step intervals:
+    auxiliaryfunctions.find_step_intervals(df_extrema_filtered, foot_smoothed, keepers2, three_max)
 
     return df_extrema_filtered, df_highest_max, inflection_point, neutral_force_mean, neutral_force_std
 
@@ -50,7 +54,7 @@ def smooth_foot_position(foot_pos_x, foot_timestamp, sample_spacing_foot, df_cur
 
     x_values = list(foot_timestamp)
     if filtertype == "savgol":
-        y_values_savgol = signal.savgol_filter(foot_pos_x, 111, 3)  # windowlength, filterorder
+        y_values_savgol = signal.savgol_filter(foot_pos_x, 121, 3)  # windowlength, filterorder
         return x_values, y_values_savgol
     elif filtertype == "fft":
         n = len(foot_timestamp)
@@ -114,6 +118,7 @@ def plot_force_data_and_position_data(overwrite_plots, smoothing, filtertype):
 
         if os.path.isdir(path):
             number_of_files = len(glob(os.path.join(path, "*.csv")))
+            print("number_of_files = ", number_of_files)
 
             if number_of_files == 0:
                 print("no files in assemble_csv found, run forceAnalysis.assemble() first.")
@@ -158,7 +163,7 @@ def plot_force_data_and_position_data(overwrite_plots, smoothing, filtertype):
                 colours = ['#e3433d', '#0b6ade', '#5bdea5', '#690612', '#150669', '#1c5239']
                 sn.set_style('whitegrid')
 
-                scalefactor = 500
+                scalefactor = auxiliaryfunctions.define_scalefactor()
                 FR_pos_x = data_forces_and_pos['FR_pos_x']
                 FR_pos_x = [y * scalefactor for y in FR_pos_x]
                 FR_pos_x = FR_pos_x[0:len(min_x_pos)]
@@ -193,7 +198,7 @@ def plot_force_data_and_position_data(overwrite_plots, smoothing, filtertype):
                         x_values, foot_smoothed = smooth_foot_position(HR_pos_x, data_forces_and_pos['HR_timestamp'][:len(min_x_pos)], sample_spacing_foot, df_current_run_summary, filtertype=filtertype)
 
                     ### get neutral Z FORCE:
-                    df_extrema_filtered, df_highest_max, inflection_point, neutral_force_mean, neutral_force_std = get_neutral_force_z(foot_smoothed=foot_smoothed, x_values=x_values, data_forces_and_pos=data_forces_and_pos)
+                    df_extrema_filtered, df_highest_max, inflection_point, neutral_force_mean, neutral_force_std = get_neutral_force_z(foot_smoothed=foot_smoothed, x_values=x_values, data_forces_and_pos=data_forces_and_pos, run_number=run_number)
 
                 fig, ax = plt.subplots()
                 #ax2 = ax.twiny()
@@ -233,6 +238,8 @@ def plot_force_data_and_position_data(overwrite_plots, smoothing, filtertype):
                 ax.set_xlabel("rosbag timesteps")
                 #ax2.set_xlabel("position timesteps")
                 plt.ylabel(f'{run_number}_forces')
+                plt.legend(loc='best')
+                plt.setp(ax.get_legend().get_texts(), fontsize='8')  # for legend text
 
                 fig1 = plt.gcf()
                 fig1.savefig(os.path.join(output_path, f'{run_number}_force_pos_plot.png'), dpi=300)
