@@ -1,4 +1,4 @@
-def get_neutral_force_z(foot_smoothed, x_values, data_forces_and_pos, run_number):
+def get_neutral_force_z(foot_smoothed, x_values, data_forces_and_pos, run_number, df_extrema_filtered):
     """
     This function is used on the smoothed foot data.
     This function looks for the time when the sensorfoot is in the air (highest position spike = global max).
@@ -11,12 +11,10 @@ def get_neutral_force_z(foot_smoothed, x_values, data_forces_and_pos, run_number
     ### IMPORTS:
     from forceAnalysis.utils import auxiliaryfunctions
     import numpy as np
+    import matplotlib.pyplot as plt
+    import seaborn as sn
 
     print("determining neutral force z...")
-
-    # find the highest gradient/steepest slope before the maximum
-    df_extrema_filtered, keepers2, three_max = auxiliaryfunctions.find_all_max_and_min_of_function(x_values, foot_smoothed, run_number)
-    df_highest_max = df_extrema_filtered[df_extrema_filtered['y'] == max(df_extrema_filtered['y'])]
 
     # find the inflection point before the global max, returns tuple of coords of inflection point
     inflection_point = auxiliaryfunctions.find_inflection_point_before_highest_max(x_values, foot_smoothed, df_extrema_filtered)
@@ -31,11 +29,7 @@ def get_neutral_force_z(foot_smoothed, x_values, data_forces_and_pos, run_number
     neutral_force_std = np.std(list(neutral_force_subset['force_z']))
     print("number_of_forces: ", neutral_force_subset.shape[0], "\nmean: ", neutral_force_mean, "\nstd: ", neutral_force_std)
 
-
-    ## find the step intervals:
-    auxiliaryfunctions.find_step_intervals(df_extrema_filtered, foot_smoothed, keepers2, three_max)
-
-    return df_extrema_filtered, df_highest_max, inflection_point, neutral_force_mean, neutral_force_std
+    return inflection_point, neutral_force_mean, neutral_force_std
 
 
 def smooth_foot_position(foot_pos_x, foot_timestamp, sample_spacing_foot, df_current_run_summary, filtertype):
@@ -108,11 +102,13 @@ def plot_force_data_and_position_data(overwrite_plots, smoothing, filtertype):
         summary_path = os.path.join(path, "summary_data")
 
         output_path = os.path.join(path, "force_and_position_plots")
+        output_path2 = os.path.join(output_path, "foot_plots")
         auxiliaryfunctions.attempttomakefolder(output_path)
+        auxiliaryfunctions.attempttomakefolder(output_path2)
 
         if os.path.isdir(summary_path):
             summary_data = pd.read_csv(os.path.join(summary_path, "summary_data.csv"))
-            data_vel_and_freq = summary_data[['run', 'velocity', 'step_frequency']]
+            data_vel_and_freq = summary_data[['run', 'velocity', 'step_frequency', 'footfallpattern', 'direction', 'surface', 'forcesbiased']]
         else:
             print("no summary_data folder. Run forceAnalysis.assemble() first.")
 
@@ -123,6 +119,9 @@ def plot_force_data_and_position_data(overwrite_plots, smoothing, filtertype):
             if number_of_files == 0:
                 print("no files in assemble_csv found, run forceAnalysis.assemble() first.")
                 exit()
+
+            # create empty dataframe to store swing phase data for all runs:
+            all_swing_data = {}
 
             for i, file in enumerate(glob(os.path.join(path, "*.csv"))):
                 print("Progress: ", i, "/", number_of_files)
@@ -184,22 +183,80 @@ def plot_force_data_and_position_data(overwrite_plots, smoothing, filtertype):
 
 
                 #### SMOOTHING
-                if smoothing == True:
+                # TODO: Do this for every foot, so that we get the swing phases for every foot
+                swing_phases_feet = {}
+                for foot in feet:
+                    print("\n>>>>> FOOT: ", foot, "\n")
                     # get sensorfoot:
                     sensorfoot_of_run = auxiliaryfunctions.get_sensorfoot_for_run(run_number)
                     print(run_number, sensorfoot_of_run)
 
-                    # so far only sensorfoot FR and HR exist:
-                    # choose filtertype "savgol", "fft" or "butter"
-                    # filtertype = "fft"
-                    if isinstance(sensorfoot_of_run, str) and sensorfoot_of_run == "FR":
-                        x_values, foot_smoothed = smooth_foot_position(FR_pos_x, data_forces_and_pos['FR_timestamp'][:len(min_x_pos)], sample_spacing_foot, df_current_run_summary, filtertype=filtertype)
-                    elif isinstance(sensorfoot_of_run, str) and sensorfoot_of_run == "HR":
-                        x_values, foot_smoothed = smooth_foot_position(HR_pos_x, data_forces_and_pos['HR_timestamp'][:len(min_x_pos)], sample_spacing_foot, df_current_run_summary, filtertype=filtertype)
+                    # smooth foot data
+                    if isinstance(foot, str) and foot == "FR":
+                        x_values, foot_smoothed = smooth_foot_position(FR_pos_x, data_forces_and_pos['FR_timestamp'][
+                                                                                 :len(min_x_pos)], sample_spacing_foot,
+                                                                       df_current_run_summary, filtertype=filtertype)
+                    elif isinstance(foot, str) and foot == "HR":
+                        x_values, foot_smoothed = smooth_foot_position(HR_pos_x, data_forces_and_pos['HR_timestamp'][
+                                                                                 :len(min_x_pos)], sample_spacing_foot,
+                                                                       df_current_run_summary, filtertype=filtertype)
+                    elif isinstance(foot, str) and foot == "FL":
+                        x_values, foot_smoothed = smooth_foot_position(FL_pos_x, data_forces_and_pos['FL_timestamp'][
+                                                                                 :len(min_x_pos)], sample_spacing_foot,
+                                                                       df_current_run_summary, filtertype=filtertype)
+                    elif isinstance(foot, str) and foot == "HL":
+                        x_values, foot_smoothed = smooth_foot_position(HL_pos_x, data_forces_and_pos['HL_timestamp'][
+                                                                                 :len(min_x_pos)], sample_spacing_foot,
+                                                                       df_current_run_summary, filtertype=filtertype)
 
-                    ### get neutral Z FORCE:
-                    df_extrema_filtered, df_highest_max, inflection_point, neutral_force_mean, neutral_force_std = get_neutral_force_z(foot_smoothed=foot_smoothed, x_values=x_values, data_forces_and_pos=data_forces_and_pos, run_number=run_number)
+                    # find all maxima of smoothed foot:
+                    df_extrema, df_extrema_filtered, keepers2, three_max = auxiliaryfunctions.find_all_max_and_min_of_function(
+                        x_values, foot_smoothed, run_number)
+                    df_highest_max = df_extrema_filtered[df_extrema_filtered['y'] == max(df_extrema_filtered['y'])]
 
+                    # if the current foot is the sensorfoot, store data for plotting later
+                    if foot == sensorfoot_of_run:
+                        df_extrema_filtered_sf = df_extrema_filtered
+                        df_highest_max_sf = df_highest_max
+                        foot_smoothed_sf = foot_smoothed
+
+                    # find all swing phases of smoothed foot:
+                    ## find the step intervals:
+                    swings = auxiliaryfunctions.find_step_intervals(df_extrema, df_extrema_filtered, foot_smoothed,
+                                                                    keepers2, three_max)
+                    swing_phases_feet[foot] = swings
+
+                    # TESTPLOTS for individual feet:
+                    sn.lineplot(x_values, foot_smoothed, color='grey')
+                    sn.scatterplot(x='x', y='y', data=df_extrema, alpha=0.5)
+                    sn.scatterplot(x='x', y='y', data=df_extrema_filtered, color='red')
+                    sn.scatterplot(x='x', y='y', data=df_extrema_filtered[df_extrema_filtered['y'] == max(three_max)],
+                                   color='green')
+                    # plot swing phases:
+                    for swing in swings:
+                        plt.vlines(x_values[swing[0]], ymin=min(foot_smoothed), ymax=max(foot_smoothed), linewidth=0.8)
+                        plt.vlines(x_values[swing[1]], ymin=min(foot_smoothed), ymax=max(foot_smoothed), linewidth=0.8)
+                    plt.title(run_number + "_" + foot)
+                    fig1 = plt.gcf()
+                    fig1.savefig(os.path.join(output_path2, f'{run_number}_{foot}.png'), dpi=300)
+
+                    plt.show()
+
+                    if foot == sensorfoot_of_run:
+                        # get the neutral z force:
+                        inflection_point, neutral_force_mean, neutral_force_std = get_neutral_force_z(
+                            foot_smoothed=foot_smoothed, x_values=x_values, data_forces_and_pos=data_forces_and_pos,
+                            run_number=run_number, df_extrema_filtered=df_extrema_filtered)
+
+
+
+
+
+                # swing_phases_feet contains all the swing phases for each foot for the current run
+                print("\n\nswing_phases_feet: \n", swing_phases_feet, '\n')
+
+
+                # Plotting
                 fig, ax = plt.subplots()
                 #ax2 = ax.twiny()
                 # plot imu data:
@@ -217,10 +274,10 @@ def plot_force_data_and_position_data(overwrite_plots, smoothing, filtertype):
                 sn.lineplot(x = data_forces_and_pos['HR_timestamp'][:len(min_x_pos)], y = HR_pos_x, label='HR', dashes=[(2,2)], linewidth=1)
 
                 if smoothing == True and isinstance(sensorfoot_of_run, str):
-                    sn.lineplot(x = x_values, y = foot_smoothed, label=f'{sensorfoot_of_run} pos {filtertype}', linewidth=1)
-                    sn.scatterplot(x='x', y='y', data=df_extrema_filtered, color='red')
+                    sn.lineplot(x = x_values, y = foot_smoothed_sf, label=f'{sensorfoot_of_run} pos {filtertype}', linewidth=1)
+                    sn.scatterplot(x='x', y='y', data=df_extrema_filtered_sf, color='red')
 
-                    sn.scatterplot(x='x', y='y', data=df_highest_max,
+                    sn.scatterplot(x='x', y='y', data=df_highest_max_sf,
                                    color='green')
                     plt.scatter(inflection_point[0], inflection_point[1],marker='o', color='black')
                     if max(data_forces_and_pos['force_z']) < max(foot_smoothed):
@@ -245,6 +302,55 @@ def plot_force_data_and_position_data(overwrite_plots, smoothing, filtertype):
                 fig1.savefig(os.path.join(output_path, f'{run_number}_force_pos_plot.png'), dpi=300)
 
                 plt.show()
+
+                ### assemble the swing phase data for current run
+                #swing_data_run = {}
+                list_of_rows = []
+
+                #print(data_forces_and_pos)
+                for k,v in swing_phases_feet.items():
+                    # Foot and the dict of swings
+                    print("k: ", k, "v: ", v)
+                    for i, swing in enumerate(v):
+                        print('swing: ', swing)
+                        # get the timestamps for the swing index:
+                        swing_timestamp = [x_values[swing[0]], x_values[swing[1]]]
+                        print("swing_timestamp: ", swing_timestamp)
+                        run = run_number
+                        foot = k
+                        sensorfoot = sensorfoot_of_run
+                        # find the clostest timestamp of the foot swing phase data to the force data:
+                        clostest_low = auxiliaryfunctions.find_closest_value(list(data_forces_and_pos['force_timestamp']), swing_timestamp[0])
+                        clostest_high = auxiliaryfunctions.find_closest_value(list(data_forces_and_pos['force_timestamp']), swing_timestamp[1])
+                        current_row_interval = [data_forces_and_pos[data_forces_and_pos['force_timestamp'] == clostest_low].index[0],
+                                                data_forces_and_pos[data_forces_and_pos['force_timestamp'] == clostest_high].index[0]]
+                        print("current_row_interval: ", current_row_interval)
+                        force_max = max(data_forces_and_pos.loc[current_row_interval[0]:current_row_interval[1], 'force_z'])
+                        force_min = min(data_forces_and_pos.loc[current_row_interval[0]:current_row_interval[1], 'force_z'])
+                        force_mean = np.mean(data_forces_and_pos.loc[current_row_interval[0]:current_row_interval[1], 'force_z'])
+                        neutral_force = neutral_force_mean
+                        gait = summary_data[summary_data['run'] == run]['footfallpattern'].values[0]
+                        velocity = summary_data[summary_data['run'] == run]['velocity'].values[0]
+                        step_frequency = summary_data[summary_data['run'] == run]['step_frequency'].values[0]
+                        surface = summary_data[summary_data['run'] == run]['surface'].values[0]
+                        direction = summary_data[summary_data['run'] == run]['direction'].values[0]
+                        forcesbiased = summary_data[summary_data['run'] == run]['forcesbiased'].values[0]
+                        list_of_rows.append([run, foot, sensorfoot, force_max, force_min, force_mean, neutral_force, gait,
+                                            velocity, step_frequency, surface, direction, forcesbiased])
+                all_swing_data[run_number] = list_of_rows
+
+            print("all swing data: \n", all_swing_data)
+            columns = ['run', 'foot', 'sensorfoot', 'force_max', 'force_min', 'force_mean', 'neutral_force', 'gait',
+                       'velocity', 'step_frequency', 'surface', 'direction', 'forcesbiased']
+            df_all_swing_data = pd.DataFrame(columns=columns)
+            # fill dataframe:
+            for k, v in all_swing_data.items():
+                for list_row in v:
+                    df_all_swing_data.loc[len(df_all_swing_data)] = list_row
+            print(df_all_swing_data)
+
+            # save the dataframe:
+            df_all_swing_data.to_csv(os.path.join(output_path, "magneto_swing_phase_data.csv"), index=True, header=True)
 
         else:
             print("no assembled_csv folder. Run forceAnalysis.assemble() first.")

@@ -62,14 +62,11 @@ def get_sensorfoot_for_run(run_number):
 
 
 # the indices of these points in the data will be needed, --> return lists of points
+# TODO: put this onto plot_force_and_position
 def find_all_max_and_min_of_function(x_values, y_foot_smoothed, run_number):
     import numpy as np
     from scipy.signal import find_peaks
-    import matplotlib.pyplot as plt
-    import seaborn as sn
     import pandas as pd
-
-    plt.figure()
 
     print("\nmax and mins...")
 
@@ -128,23 +125,17 @@ def find_all_max_and_min_of_function(x_values, y_foot_smoothed, run_number):
 
     #print(df_extrema_filtered)
 
-    # testplot
-    sn.lineplot(x_values, y_foot_smoothed, color='grey')
-    sn.scatterplot(x='x', y='y', data=df_extrema, alpha=0.5)
-    sn.scatterplot(x='x', y='y', data=df_extrema_filtered, color='red')
-    sn.scatterplot(x='x', y='y', data=df_extrema_filtered[df_extrema_filtered['y'] == max(three_max_y)], color='green')
-    plt.title(run_number)
-    plt.show()
-
-    return df_extrema_filtered, keepers2, three_max_y
+    return df_extrema, df_extrema_filtered, keepers2, three_max_y
 
 
-def find_step_intervals(df_extrema_filtered, y_foot_smoothed, keepers2, three_max):
+# TODO: put this onto plot_force_and_position
+def find_step_intervals(df_extrema, df_extrema_filtered, y_foot_smoothed, keepers2, three_max):
     """
     swing phase is defined as the minimum before the highest max of the step cycle of the foot, if there are more than 3 maxima.
     stance phase is then from the highest maximum in the step cycle to the next minimum before the following next highest peak.
     :return: tuple with 2 lists containing the start and end index for swing and stance phase respectively.
     """
+    import numpy as np
 
     print(f"\ndetecting step intervals ...")
     # check if three_max are close to each other
@@ -157,48 +148,70 @@ def find_step_intervals(df_extrema_filtered, y_foot_smoothed, keepers2, three_ma
     indices_three_max = []
     #print(round(df_extrema_filtered['y'], rounder))
     for m in three_max_keepers:
+        # TODO: FIX! through rounding the same condition applies to multiple values, hence intervals are found double
         print(round(m, rounder))
         row_m = df_extrema_filtered[round(df_extrema_filtered['y'], rounder) == round(m, rounder)]
         if row_m.shape[0] != 0:
             indices_three_max.append(row_m['index'].values[0])
     indices_three_max = sorted(indices_three_max, reverse=False)    # sort indices of three max from low to high
-    print(indices_three_max)
 
-    # TODO: only get the swing phases, so just look through maxima in three_max_keepers and get the min before
+    print("indices three max: ", indices_three_max)
 
-    # check if there is another maximum before the first of the highest:
-    swings = {}
-    # loop through indices_three_max first, then test for following if condition - only first case is different
-    if indices_three_max[0] == keepers2[0]:
-        print("there is no other maximum before the first of the highest")
-        for i, p in enumerate(three_max_keepers):
-            if i == 0:
-                low_window = df_extrema_filtered[ :p, 'index']
-                low_index = min(low_window['y']).index
-                low_x = df_extrema_filtered.loc[low_index, 'x']
-                low_y = df_extrema_filtered.loc[low_index, 'y']
-                swing = ()
-
-            elif i > 0:
-                swing = ()
-                # instead of using index 0 as minimum limit, use max before high
-                # TODO: think about if to get indices or x and y values of lower and upper swing phase limit...
-                # if len(three_max_keepers) then fill up rest with np.nan points, so that each foot has 3 swing phases?
-
-    elif indices_three_max[0] > keepers2[0]:
-        counter = 0
-        for i in range(len(keepers2)):
-            if keepers2[i] == indices_three_max[0]:
-                counter = i
+    swings = []
+    if len(indices_three_max) > 0:
+        p_last = 0
+        for i, p in enumerate(indices_three_max):
+            #p = df_extrema[df_extrema['index'] == p].index[0]
+            print("i: ", i, "  p: ", p)
+            if p == p_last:
                 break
-        print(f"there are {counter} maxima before the highest maximum")
+            else:
+                # if there is no other maximum before the first of the highest...
+                if i == 0 and indices_three_max[0] == keepers2[0]:
+                    print("there is no other maximum before the first of the highest")
+                    low_window = list(y_foot_smoothed[:p])    # get all values before the first highest max
+                    lowest = low_window.index(min(low_window))
+                    print("lowest: ", lowest)
+                    swings.append([lowest, p])
+                elif i == 0 and indices_three_max[0] != keepers2[0]:
+                    print("there is another maximum before p")
+                    start_index = keepers2[list(keepers2).index(p) - 1]
+                    print("start index: ", start_index, "  end index: ", p)
+                    low_window = list(
+                        y_foot_smoothed[start_index:p])  # get all values betw. the p highest max to the next max before
+                    print(len(low_window))
+                    lowest = start_index + low_window.index(min(low_window))
+                    print("lowest: ", lowest)
+                    swings.append([lowest, p])
+                elif 0 < i <= len(indices_three_max):
+                    print("there is another maximum before p")
+                    start_index = keepers2[list(keepers2).index(p)-1]
+                    print("start index: ", start_index, "  end index: ", p)
+                    low_window = list(y_foot_smoothed[start_index:p])  # get all values betw. the p highest max to the next max before
+                    print(len(low_window))
+                    lowest = start_index + low_window.index(min(low_window))
+                    print("lowest: ", lowest)
+                    swings.append([lowest, p])
+                elif i == len(indices_three_max) and i <= 3:
+                    swings.append([np.nan, np.nan])
+            p_last = p
+    else:
+        print("no maxima found!")
+        swings = [[np.nan, np.nan],
+                  [np.nan, np.nan],
+                  [np.nan, np.nan]]
 
-        # TODO:
-        # go from highest max to max before
+    # For now doubles in swing phases due to rounding above will just be removed:
+    # TODO: Fix this issue to not loose steps
+    swings2 = []
+    swings2 = [x for x in swings if x not in swings2]
 
-    return
+    print("swings: ", swings)
+
+    return swings2
 
 
+# TODO: put this onto plot_force_and_position
 def find_inflection_point_before_highest_max(x_values, y_foot_smoothed, df_extrema_filtered):
     import numpy as np
 
