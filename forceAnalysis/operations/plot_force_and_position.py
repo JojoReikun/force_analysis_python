@@ -183,7 +183,6 @@ def plot_force_data_and_position_data(overwrite_plots, smoothing, filtertype):
 
 
                 #### SMOOTHING
-                # TODO: Do this for every foot, so that we get the swing phases for every foot
                 swing_phases_feet = {}
                 for foot in feet:
                     print("\n>>>>> FOOT: ", foot, "\n")
