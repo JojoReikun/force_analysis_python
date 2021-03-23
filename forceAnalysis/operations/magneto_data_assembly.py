@@ -383,18 +383,23 @@ magneto_columnnames_dict = {"force": {"force_x": 9,
                                        "HR_orient_x": 89,
                                        "HR_orient_y": 90,
                                        "HR_orient_z": 91,
-                                       "HR_timestamp": 0}
+                                       "HR_timestamp": 0},
+                            'power': {"voltage_15v": 8,
+                                      "current_15v": 11,
+                                      "power_timestamp":0}
                             }  # force_x, force_y, force_z named "x", "y", "z" in csv file
 
 magneto_raw_dict = {}
 
 
-def fill_trial_note_data(path, run_number_runs):
+def fill_trial_note_data(path, run_number_runs, df_trial_notes):
     """
     this function fills in the run specific data from the notes, e.g. velocity, sensorfoot etc.
     and adds these information to the run file
     :return:
     """
+    # TODO: rewrite to match the new trial note data
+
     ### IMPORTS:
     from forceAnalysis.utils import auxiliaryfunctions
     from glob import glob
@@ -443,6 +448,7 @@ def fill_file_data(filedict, path):
     Returns the path these files are saved to.
     """
     print("\nfilling in file data ...")
+    # TODO: check if rewrite in assemble_data works with this as is (subfolder structure)
 
     for n in range(len(list(filedict.values())[0])):  # loops through number of files
         print("Progress: ", n, "/", len(list(filedict.values())[0]), "\n")
@@ -580,6 +586,7 @@ def interpolate_data(path):
 
 
 def create_summary_file(path, run_number_runs, path_summary):
+    # TODO: put this into seperate python file
     """
         this function fills in the run specific data from the notes, e.g. velocity, sensorfoot etc.
         and adds these information to the run file
@@ -655,7 +662,7 @@ def create_summary_file(path, run_number_runs, path_summary):
 
 
 ### Main function in this module:
-def magneto_data_assembly(filedict, overwrite_csv_files):
+def magneto_data_assembly(filedict, overwrite_csv_files, df_trial_notes):
     ### IMPORTS:
     from forceAnalysis.utils import auxiliaryfunctions
     print("\nmagneto data assembly")
@@ -666,13 +673,15 @@ def magneto_data_assembly(filedict, overwrite_csv_files):
     path_summary = os.path.join(path, "summary_data")
     auxiliaryfunctions.attempttomakefolder(path_summary)
 
+    # TODO rename files to add run number given on time of data collection + trial notes
+
     run_number_runs = [run for run in list(run_info.keys())]
 
     if overwrite_csv_files == True:
         # only read in files and assemble data if overwrite is True
         fill_file_data(filedict, path)
         if os.listdir(path) != []:
-            fill_trial_note_data(path, run_number_runs)
+            fill_trial_note_data(path, run_number_runs, df_trial_notes)
         else:
             print("No files in assembled folder. Maybe set overwrite csv files to True?")
             exit()
