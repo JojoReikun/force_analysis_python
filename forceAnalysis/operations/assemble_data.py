@@ -1,5 +1,6 @@
 """
 depending which 'subject' is given in the cli input ('magneto'/'lizards'), the respective data_assembly is executed.
+This is magneto_data_assembly for subject "magneto" and lizard_data_assembly for subject "lizards".
 assembled data frame will be saved to csv file for every file
 """
 
@@ -21,37 +22,100 @@ magneto_patterns = {"force": ("contact_force", "*contact_force*.csv"),
                     'power': ("polaris_jr_pwr_status", "*polaris_jr_pwr_status*.csv")
                     }
 
+lizard_patterns = {}
 
-def read_in_trial_notes():
-    data_folder_path = Path(auxiliaryfunctions.get_path_of_folder())
-    file = os.path.join(data_folder_path, "dataCollectionTable.xlsx")
+
+def read_in_trial_notes(date):
+    """
+    This function is for subject "magneto". It reads in the trial notes which were written down during the experiments.
+    Each trial date should have its own dataCollectionTable with the respective date as YYYY-MM-DD attached.
+    param: date: the date in the above mentioned format, passed as one of the arguments from def assemble()
+    """
+    print(f"In this file explorer Trial Notes please select the folder with the same trial date as {date}, which"
+          f"contains the respective dataCollectionTable")
+    name = "Trial Notes"
+    data_folder_path = Path(auxiliaryfunctions.get_path_of_folder(name))
+    file = os.path.join(data_folder_path, "dataCollectionTable_{}.xlsx".format(date))
+
     df_trial_notes = pd.read_excel(file)
+
     print(df_trial_notes.head())
-    return df_trial_notes
+    return df_trial_notes, data_folder_path
 
 
-def read_in_files_magneto():
-    # TODO: rewrite to match subfolder structure
+def read_in_files_magneto(date, folder_path):
+    import os
+    import re
+    from glob import glob
+    # TODO: rewrite to match sub folder structure -> go into all folders with the date in them, then into the csv folder
     # TODO: rename all folders and files in folder to include runNum in filenames, based on trial data: call func
-    folder_path = Path(auxiliaryfunctions.get_path_of_folder())
-    print("selected folder path: ", folder_path)
 
-    filedict = {}
+    # OLD VERSION: all csv topics are in one folder
+    #filedict = {}
     # get all csv files listed in this folder which match the stringpatterns defined in the dict
-    filelist = [f for f_ in [glob(os.path.join(folder_path, pattern[1])) for pattern in list(magneto_patterns.values())] for f in f_]
-    print('filelist: ', filelist, 'values: ', list(magneto_patterns.values()))
+    #filelist = [f for f_ in [glob(os.path.join(folder_path, pattern[1])) for pattern in list(magneto_patterns.values())] for f in f_]
+    #print('filelist: ', filelist, '\nvalues: ', list(magneto_patterns.values()))
 
-    if len(filelist) > 0:
-        pass
-    else:
-        print("WARNING: no files found")
-        exit()
+    # NEW VERSION: all csv topics are in a folder "csv" within another folder for each trial, each of which is in the selected folder path
+    # go through all trial folders (YYYY-MM-DD-hh-mm-ss) in selected folder which contain the selected date YYYY-MM-DD,
+    # then got to the csv folder in that folder. Rename all csv files to contain the time/second half of the trial folder:
+    # hh-mm-ss within the filename.
+    # add all csv files which match the magneto_file_patterns as a list to a list.
+    # after going through all trial foulders the filelist will be a list with many filedicts, hence this needs to be flattened and combined to one big filedict
 
-    # creates individual lists for each element in magneto_patterns.keys()
-    for element in magneto_patterns.keys():
-        filedict[element] = [file for file in filelist if file.find(magneto_patterns[element][0]) > 0]
-    print("filedict:\n", "{" + "\n".join("{!r}: {!r},".format(k, v) for k, v in filedict.items()) + "}")
-    return filedict
+    # find all trial folders in the selected folder which contain the passed date string
+    trial_folder_list = []
+    reg_compile = re.compile("\d{4}-\d{2}-\d{2}")
+    for dirpath, dirnames, _ in os.walk(folder_path):
+        trial_folder_list = trial_folder_list + [dirname for dirname in dirnames if reg_compile.match(dirname)]
+    print("trial folder list: ", trial_folder_list)
+
+    # create an overall list to collect all filedicts for every folder:
+    filedicts_for_trialdate = []
+    # one dict for all filedicts (keep same keys but merge values)
+    merged_filedict = {}
+
+    # go through each trial folder, go to the csv folder within it and create a filedict for that trial folder
+    for trial_folder in trial_folder_list:
+        filelist = []
+        filedict = {}
+        path = os.path.join(folder_path, trial_folder)
+        csv_folder_path = os.path.join(path, "csv")
+
+        # rename all .csv files in the csv folder to include the date and time in the filename
+        csv_file_list = glob(os.path.join(csv_folder_path, "*.csv"))
+        for csv_file in csv_file_list:
+            new_csv_name = trial_folder + "_" + csv_file.rsplit(os.path.sep, 1)[1]
+            print("new csv name: ", new_csv_name)
+
+            os.rename(csv_file, os.path.join(csv_folder_path, new_csv_name))
+
+        # create a file dict for each trial folder
+        # get all the csv files which match any of the pre-defined name patterns to include only files of sensors of interest
+        filelist = [f for f_ in [glob(os.path.join(csv_folder_path, pattern[1])) for pattern in list(magneto_patterns.values())] for f in f_]
+
+        if len(filelist) > 0:
+            pass
+        else:
+            print("WARNING: no files found")
+            exit()
+
+        # creates individual lists for each element in magneto_patterns.keys()
+        for element in magneto_patterns.keys():
+            filedict[element] = [file for file in filelist if file.find(magneto_patterns[element][0]) > 0]
+        print("filedict:\n", "{" + "\n".join("{!r}: {!r},".format(k, v) for k, v in filedict.items()) + "}")
+
+        filedicts_for_trialdate.append(filedict)
+
+    print("filedicts_for_trialdate: ", filedicts_for_trialdate)
+
+    # now we have a list of filedicts, each of those filedicts has the same keys but different values.
+    # make one big dict, with the same keys but combining all values of all filedicts for that key
+    # TODO: create merged filedict
+
+    exit() # for debugging
+
+    return
 
 
 def read_in_files_lizards():
@@ -64,17 +128,23 @@ def add_runNum_to_filenames():
 
 
 ### MAIN FUNTION called by cli.py argument
-def assemble(subject, overwrite_csv_files):
+def assemble(subject, date, overwrite_csv_files):
+    """
+    this function is called by the click argument assemble_force_data(**args) and takes the following arguments:
+    subject: String "magneto" or "lizards"
+    date: String format as YYYY-MM-DD
+    """
     print(subject)
     if subject == "magneto":
         # read in all files that match defined string patterns to not import all bag topics
         # creates a dict with several files (csv topics) for each element in magneto_patterns.keys()
 
         # read in the trial data (notes on velocity, fails etc.)
-        df_trial_notes = read_in_trial_notes()
+        df_trial_notes, data_folder_path = read_in_trial_notes(date)
 
-        filedict = read_in_files_magneto()
+        filedict = read_in_files_magneto(date, data_folder_path)
 
+        # EXECUTES THIS FUNCTION OF THE RESPECTIVE MODULE
         magneto_data_assembly(filedict, overwrite_csv_files, df_trial_notes)
 
     elif subject == "lizards":

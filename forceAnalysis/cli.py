@@ -20,9 +20,10 @@ def main(ctx, verbose):
 
 @main.command(context_settings=CONTEXT_SETTINGS)
 @click.option('subject', help='subject which to assemble data for: either "magneto" or "lizards"')
+@click.option('date', help='date YYYY-MM-DD the data collection table and trials were recorded on')
 @click.argument('overwrite_csv_files',
               default=True,
-              help='determines if csv files should be created and saved. If True, plots that exist already will be overwritten.')
+              help='determines if csv files should be created and saved. If True, files that exist already will be overwritten.')
 @click.pass_context
 
 
@@ -37,6 +38,8 @@ def assemble_force_data(_, *args, **kwargs):
     ---------- \n
     subject : string \n
     \tString either "lizards" or "magneto" \n
+    date : string \n
+    \tString as YYYY-MM-DD
     """
     from forceAnalysis.operations import assemble_data
     assemble_data.assemble(*args, **kwargs)

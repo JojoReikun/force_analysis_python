@@ -467,7 +467,6 @@ def fill_file_data(filedict, path):
             print("TOPIC: {} ".format(topic), "of topics: {}".format(list(filedict.keys())))
 
             # read the file of the current run, which belongs to topic
-            # instead of using n make sure the file fits the run number
             file = [f for f in filedict[topic] if run_number in f][0]
             #print("file: ", file)
 
@@ -535,6 +534,7 @@ def fill_file_data(filedict, path):
 
 def interpolate_data(path):
     """
+    CURRENTLY NOT USED
     force, imu, and foot position data was sampled in different frequencies.
     Reduce data points of force data to same length of foot position data points.
     :return:

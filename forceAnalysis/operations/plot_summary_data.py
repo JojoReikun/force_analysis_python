@@ -51,6 +51,6 @@ def plot_summary(overwrite_plots):
             plt.ylabel(f'{run_number}_max_forces')
 
             fig1 = plt.gcf()
-            fig1.savefig(os.path.join(output_path, f'{run_number}_forceplot_plot.png'))
+            fig1.savefig(os.path.join(output_path, f'{run_number}_summary_plot.png'))
 
             plt.show()
