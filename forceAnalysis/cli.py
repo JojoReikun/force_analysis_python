@@ -45,6 +45,32 @@ def assemble_force_data(_, *args, **kwargs):
     assemble_data.assemble(*args, **kwargs)
 
 
+## DATA SUMMARY
+##################################################################################
+
+@main.command(context_settings=CONTEXT_SETTINGS)
+@click.option('date', help='date YYYY-MM-DD the data collection table and trials were recorded on')
+@click.pass_context
+
+def create_summary_data(_, *args, **kwargs):
+    """Reads in the given list of .csv files for the subject and assembled the data.
+    Arguments \n
+    ---------- \n
+    overwrite_csv_files: boolean \n
+    \tBoolean either True or False. Default: True. determine if to overwrite the csv data files for every run
+
+    Options \n
+    ---------- \n
+    subject : string \n
+    \tString either "lizards" or "magneto" \n
+    date : string \n
+    \tString as YYYY-MM-DD
+    """
+    from forceAnalysis.operations import create_summary_file
+    create_summary_file.create_summary(*args, **kwargs)
+
+
+
 ## PLOT FORCES:
 ##################################################################################
 

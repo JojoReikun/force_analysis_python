@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import os
 
-# contains all "static" data for all runs
+# contains all "static" data for all runs for 28-10-2020 data collection
 # startposition: 0 = straight up, -10 rotated 10 deg to left, 10 rotated 10 deg to the right, NAN if run on ground or in air
 # failreason describes if the failedfoot did not attach when it was its turn or another failedfoot detached while the other moved
 # if failed variables are all NAN, the trial was complete (3 complete cycles)
@@ -392,19 +392,20 @@ magneto_columnnames_dict = {"force": {"force_x": 9,
 magneto_raw_dict = {}
 
 
-def fill_trial_note_data(path, run_number_runs, df_trial_notes):
+def fill_trial_note_data_from_dict(path, run_number_runs):
     """
     this function fills in the run specific data from the notes, e.g. velocity, sensorfoot etc.
-    and adds these information to the run file
+    and adds these information to the run file.
+    This function uses the above defined run_info dict to add the respective info to the respective run.
+    Data collection 28-10-2020
     :return:
     """
-    # TODO: rewrite to match the new trial note data
 
     ### IMPORTS:
     from forceAnalysis.utils import auxiliaryfunctions
     from glob import glob
 
-    print("\nfilling in >static< trial data...")
+    print("\nfilling in >static< trial data from run_info dict...")
 
     pd.set_option('max_columns', None)
 
@@ -436,8 +437,73 @@ def fill_trial_note_data(path, run_number_runs, df_trial_notes):
                 data[k] = appendlist
 
         #print("\n", data.head(), "\n")
+        #overwrite previous assembled csv with trial notes filled in
         filename = run_number + "_assembled"
         data.to_csv(os.path.join(path, "{}.csv".format(filename)), index=False, header=True)
+
+    return
+
+
+def fill_trial_note_data_from_file(path, df_trial_notes):
+    """
+        this function fills in the run specific data from the notes, e.g. velocity, sensorfoot etc.
+        and adds these information to the run file.
+        This function uses the dataCollectionTable which contains this information for all runs for that trial.
+        Data collection Mar/Apr 2021 (Magneto@USC)
+        :return:
+        """
+
+    ### IMPORTS:
+    from forceAnalysis.utils import auxiliaryfunctions
+    from glob import glob
+
+    print("\n -- filling in >static< trial data from dataCollectionTable...\n")
+
+    pd.set_option('max_columns', None)
+
+    # add a column to df_trial_notes which combined date and time in the same format (except missing ss) as filenames
+    df_trial_notes["date"] = df_trial_notes["date"].astype(str)
+    df_trial_notes["time"] = df_trial_notes["time"].astype(str)
+    f_add_dash = lambda x: (x[:2] + "-" + x[2:])    # add dash to middle of each time entry to split hh and mm
+    df_trial_notes["time2"] = df_trial_notes["time"].apply(f_add_dash)
+    df_trial_notes["date_time"] = df_trial_notes['date'] + "-" + df_trial_notes['time2']
+    #print(df_trial_notes.head())
+
+    filelist = []
+    for file in glob(os.path.join(path, "*.csv")):
+        filelist.append(file)
+
+    # filter for "_assembled" in filename:
+    filelist = [file for file in filelist if "_assembled" in file]
+
+    print("filelist: ", filelist)
+
+    # read in files one by one and add trial notes to dataframe:
+    for i, file in enumerate(filelist):
+        print("\nProgress: ", i, "/", len(filelist))
+        filename = file.rsplit(os.sep, 1)[1]
+        date_time_stamp = filename.split("_", 1)[0]    # should be date and time
+        # print("\n--- run: ", date_time_stamp)
+        # this gets rid of the seconds in the stamp so it's comparable to the date_time column
+        date_time_stamp_no_ss = date_time_stamp.rsplit("-", 1)[0]
+
+        # find the matching row in the df_trial_note dataframe which matches the date_time_stamp_no_ss of file:
+        correct_row = df_trial_notes[df_trial_notes["date_time"] == date_time_stamp_no_ss]
+        # print("correct row: ", correct_row)
+        columns_to_attach = df_trial_notes.columns
+
+        data = pd.read_csv(file)
+
+        rows_count = data.shape[0]
+
+        for col in columns_to_attach:
+            data[col] = [correct_row[col]] * rows_count
+
+        #print(data.head())
+        save_filename = date_time_stamp + "_assembled_meta"
+        data.to_csv(os.path.join(path, "{}.csv".format(save_filename)), index=False, header=True)
+
+        print(f"saved file: {save_filename}.csv to: {path}")
 
     return
 
@@ -445,7 +511,6 @@ def fill_trial_note_data(path, run_number_runs, df_trial_notes):
 def fill_file_data(filedict, path):
     """
     reads in file by file (run) and adds data to run_data_dict.
-    Returns the path these files are saved to.
     """
     print("\nfilling in file data ...")
     # TODO: check if rewrite in assemble_data works with this as is (subfolder structure)
@@ -464,7 +529,7 @@ def fill_file_data(filedict, path):
         columnnames = []
         for topic in list(filedict.keys()):
             # TODO: check order of loops and that run_data_dict actually contains all topics from 1 run
-            print("TOPIC: {} ".format(topic), "of topics: {}".format(list(filedict.keys())))
+            #print("TOPIC: {} ".format(topic), "of topics: {}".format(list(filedict.keys())))
 
             # read the file of the current run, which belongs to topic
             file = [f for f in filedict[topic] if run_number in f][0]
@@ -548,7 +613,7 @@ def interpolate_data(path):
         filelist.append(file)
 
     # filter for "_assembled" in filename:
-    filelist = [file for file in filelist if "_assembled" in file]
+    filelist = [file for file in filelist if "_assembled_meta" in file]
 
     # add interpolated force columns
     for file in filelist:
@@ -557,7 +622,7 @@ def interpolate_data(path):
         run_number = file.rsplit(os.sep, 1)[1]
         run_number = run_number.split("_", 1)[0]
 
-        filename = run_number + "_assembled"
+        filename = run_number + "_assembled_interp"
         #TODO: fix reduction of data point. Currently lost shape, seems to only take start data
         sensorfoot = data['sensorfoot'][1]
         length_of_foot_pos_data = data[f'{sensorfoot}_pos_x'].count()
@@ -585,109 +650,41 @@ def interpolate_data(path):
     return
 
 
-def create_summary_file(path, run_number_runs, path_summary):
-    # TODO: put this into seperate python file
-    """
-        this function fills in the run specific data from the notes, e.g. velocity, sensorfoot etc.
-        and adds these information to the run file
-        :return:
-        """
-    ### IMPORTS:
-    from forceAnalysis.utils import auxiliaryfunctions
-    from glob import glob
-    print("creating summary files ... ")
-    pd.set_option('max_columns', None)
-
-    filelist = []
-    for file in glob(os.path.join(path, "*.csv")):
-        filelist.append(file)
-
-    # filter for "_assembled" in filename:
-    filelist = [file for file in filelist if "_assembled" in file]
-
-    # create summary data frame:
-    summarycolumns = ['run', 'velocity', 'step_frequency', 'footfallpattern', 'direction', 'surface', 'sensorfoot',
-                      'failedstep', 'failedfoot', 'failreason', 'forcesbiased',
-                      'max_force_x', 'max_force_y', 'max_force_z', 'mean_force_x', 'mean_force_y', 'mean_force_z',
-                      'min_force_x', 'min_force_y', 'min_force_z']
-    summary_data = pd.DataFrame(columns=summarycolumns, index=range(len(filelist)))
-
-    # read in files one by one and add trial notes to dataframe:
-    i = 1
-    file = filelist[i]
-    for i, file in zip(range(len(filelist)), filelist):
-        print(f"Progress: {i}/{len(filelist)}")
-        run_number = file.rsplit(os.sep, 1)[1]
-        run_number = run_number.split("_", 1)[0]
-        #print("\n--- run: ", run_number)
-
-        data = pd.read_csv(file)
-
-        summary_data['run'][i] = run_number
-        summary_data['max_force_x'][i] = np.mean(sorted(list(data['force_x']), reverse=True)[0:3])
-        summary_data['max_force_y'][i] = np.mean(sorted(list(data['force_y']), reverse=True)[0:3])
-        summary_data['max_force_z'][i] = np.mean(sorted(list(data['force_z']), reverse=True)[0:3])
-        summary_data['mean_force_x'][i] = np.mean(data['force_x'])
-        summary_data['mean_force_y'][i] = np.mean(data['force_y'])
-        summary_data['mean_force_z'][i] = np.mean(data['force_z'])
-        summary_data['min_force_x'][i] = np.mean(sorted(list(data['force_x']), reverse=False)[0:3])
-        summary_data['min_force_y'][i] = np.mean(sorted(list(data['force_y']), reverse=False)[0:3])
-        summary_data['min_force_z'][i] = np.mean(sorted(list(data['force_z']), reverse=False)[0:3])
-
-
-        if run_number in run_number_runs:
-            # get summary values:
-
-            summary_data['velocity'][i] = data['velocity'][1]
-            summary_data['step_frequency'][i] = data['step_frequency'][1]
-            summary_data['footfallpattern'][i] = data['footfallpattern'][1]
-            summary_data['direction'][i] = data['direction'][1]
-            summary_data['surface'][i] = data['surface'][1]
-            summary_data['sensorfoot'][i] = data['sensorfoot'][1]
-            summary_data['failedstep'][i] = data['failedstep'][1]
-            summary_data['failedfoot'][i] = data['failedfoot'][1]
-            summary_data['failreason'][i] = data['failreason'][1]
-            summary_data['forcesbiased'][i] = data['forcesbiased'][1]
-            summary_data['max_force_x'][i] = np.mean(sorted(list(data['force_x']))[-3])
-            summary_data['max_force_y'][i] = np.mean(sorted(list(data['force_y']))[-3])
-            summary_data['max_force_z'][i] = np.mean(sorted(list(data['force_z']))[-3])
-
-
-    #print("\n", summary_data)
-
-    #save summary data:
-    summary_data.to_csv(os.path.join(path_summary, "summary_data.csv"))
-
-    return
-
-
 ### Main function in this module:
-def magneto_data_assembly(filedict, overwrite_csv_files, df_trial_notes):
+def magneto_data_assembly(filedict, overwrite_csv_files, df_trial_notes, date):
+    """
+    filedict: contains paths to csv files for all runs for a trial sorted by topic.
+    df_trial_notes: data frame of the dataCollectionTable.xlsx file.
+    """
     ### IMPORTS:
     from forceAnalysis.utils import auxiliaryfunctions
     print("\nmagneto data assembly")
 
-    path = os.path.join(os.getcwd(), "assembled_csv")
-    auxiliaryfunctions.attempttomakefolder(path)
-
-    path_summary = os.path.join(path, "summary_data")
-    auxiliaryfunctions.attempttomakefolder(path_summary)
+    # generate folder structure for result files:
+    result_path = os.path.join(os.getcwd(), "result_files")
+    auxiliaryfunctions.attempttomakefolder(result_path)
+    result_trial_path = os.path.join(result_path, date)
+    auxiliaryfunctions.attempttomakefolder(result_trial_path)
+    result_trial_assembly_path = os.path.join(result_trial_path, "assembled_csv")
+    auxiliaryfunctions.attempttomakefolder(result_trial_assembly_path)
 
     # TODO rename files to add run number given on time of data collection + trial notes
 
     run_number_runs = [run for run in list(run_info.keys())]
 
-    if overwrite_csv_files == True:
+    # assmembly of sensor data into one file will be skipped if _assembled csv files already exist
+    if overwrite_csv_files == True and os.listdir(result_trial_assembly_path) == []:
         # only read in files and assemble data if overwrite is True
-        fill_file_data(filedict, path)
-        if os.listdir(path) != []:
-            fill_trial_note_data(path, run_number_runs, df_trial_notes)
-        else:
-            print("No files in assembled folder. Maybe set overwrite csv files to True?")
-            exit()
+        fill_file_data(filedict, result_trial_assembly_path)
 
-    if os.listdir(path) != []:
-        create_summary_file(path, run_number_runs, path_summary)
-        #interpolate_data(path)
+    # if overwrite_csv_files == True and _assemled.csv files exist:
+    elif overwrite_csv_files == True and os.listdir(result_trial_assembly_path) != []:
+        # use this function if analysing the 28-10-2020 data collection with predefined run_info dict
+        #fill_trial_note_data_from_dict(result_trial_assembly_path, run_number_runs)
+        # use this function to use the dataCollectionTable for the current run analysed.
+        fill_trial_note_data_from_file(result_trial_assembly_path, df_trial_notes)
+    else:
+        print("No files in assembled folder. Maybe set overwrite csv files to True?")
+        exit()
 
     return

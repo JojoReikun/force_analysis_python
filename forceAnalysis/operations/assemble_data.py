@@ -73,22 +73,34 @@ def read_in_files_magneto(date, folder_path):
     # create an overall list to collect all filedicts for every folder:
     filedicts_for_trialdate = []
     # one dict for all filedicts (keep same keys but merge values)
-    merged_filedict = {}
+    merged_filedict = dict(zip(magneto_patterns.keys(), [None]*len(magneto_patterns.keys())))
+    print("merged filedict: ", merged_filedict)
 
     # go through each trial folder, go to the csv folder within it and create a filedict for that trial folder
     for trial_folder in trial_folder_list:
-        filelist = []
         filedict = {}
         path = os.path.join(folder_path, trial_folder)
         csv_folder_path = os.path.join(path, "csv")
 
         # rename all .csv files in the csv folder to include the date and time in the filename
+        # only if date and time not already in filename
         csv_file_list = glob(os.path.join(csv_folder_path, "*.csv"))
         for csv_file in csv_file_list:
-            new_csv_name = trial_folder + "_" + csv_file.rsplit(os.path.sep, 1)[1]
-            print("new csv name: ", new_csv_name)
+            if csv_file.startswith("magneto") == True:
+                print("adding trial date to filenames...")
+                # use this section if data accidentally contained twice in filename now:
+                # works if original files start with "magneto"
+                keep_from = "magneto"
+                pure_file_name = csv_file.rsplit(os.path.sep, 1)[1]
+                orig_file_name = pure_file_name.partition(keep_from)[1] + "_" + pure_file_name.partition(keep_from)[2]
+                #print("filename reset: ", orig_file_name)
 
-            os.rename(csv_file, os.path.join(csv_folder_path, new_csv_name))
+                new_csv_name = trial_folder + "_" + orig_file_name
+                #print("new csv name: ", new_csv_name)
+
+                os.rename(csv_file, os.path.join(csv_folder_path, new_csv_name))
+            else:
+                continue
 
         # create a file dict for each trial folder
         # get all the csv files which match any of the pre-defined name patterns to include only files of sensors of interest
@@ -103,19 +115,32 @@ def read_in_files_magneto(date, folder_path):
         # creates individual lists for each element in magneto_patterns.keys()
         for element in magneto_patterns.keys():
             filedict[element] = [file for file in filelist if file.find(magneto_patterns[element][0]) > 0]
-        print("filedict:\n", "{" + "\n".join("{!r}: {!r},".format(k, v) for k, v in filedict.items()) + "}")
+        #print("filedict:\n", "{" + "\n".join("{!r}: {!r},".format(k, v) for k, v in filedict.items()) + "}")
 
         filedicts_for_trialdate.append(filedict)
 
     print("filedicts_for_trialdate: ", filedicts_for_trialdate)
 
+    print("filedict merged empty: ", merged_filedict)
+
     # now we have a list of filedicts, each of those filedicts has the same keys but different values.
     # make one big dict, with the same keys but combining all values of all filedicts for that key
-    # TODO: create merged filedict
+    for filedict in filedicts_for_trialdate:
+        # merged filedict empty:  {'force': None, 'imu': None, 'FR_pos': None, 'FL_pos': None, 'HR_pos': None, 'HL_pos': None, 'power': None}
+        for k,v in filedict.items():
+            if merged_filedict[k] is None:
+                #print("value for key is None")
+                # append the list to the key to overwrite initial None value
+                merged_filedict[k] = v
+            else:
+                #print("value is not None and file will be added to list")
+                # append filename v[0] which is in list (v)
+                merged_filedict[k] = merged_filedict[k] + v
 
-    exit() # for debugging
 
-    return
+    print("merged filedict flattened: \n", merged_filedict)
+
+    return merged_filedict
 
 
 def read_in_files_lizards():
@@ -142,10 +167,10 @@ def assemble(subject, date, overwrite_csv_files):
         # read in the trial data (notes on velocity, fails etc.)
         df_trial_notes, data_folder_path = read_in_trial_notes(date)
 
-        filedict = read_in_files_magneto(date, data_folder_path)
+        merged_filedict = read_in_files_magneto(date, data_folder_path)
 
         # EXECUTES THIS FUNCTION OF THE RESPECTIVE MODULE
-        magneto_data_assembly(filedict, overwrite_csv_files, df_trial_notes)
+        magneto_data_assembly(merged_filedict, overwrite_csv_files, df_trial_notes, date)
 
     elif subject == "lizards":
         filedict = read_in_files_lizards()
