@@ -497,7 +497,12 @@ def fill_trial_note_data_from_file(path, df_trial_notes):
         rows_count = data.shape[0]
 
         for col in columns_to_attach:
-            data[col] = [correct_row[col]] * rows_count
+            #print("correct_row_data & length: ", correct_row[col].values, len(correct_row[col].values))
+            attach_data = [correct_row[col].values[0]] * rows_count
+            #print("attach data: ", attach_data[1])
+
+            data[col] = attach_data
+
 
         #print(data.head())
         save_filename = date_time_stamp + "_assembled_meta"
@@ -505,14 +510,17 @@ def fill_trial_note_data_from_file(path, df_trial_notes):
 
         print(f"saved file: {save_filename}.csv to: {path}")
 
+    print("Done adding trial notes to sensor data, now you can proceed to create a summary file to combine all runs.\n"
+          "use forceAnalysis.create_summary(date) for this")
+
     return
 
 
 def fill_file_data(filedict, path):
     """
-    reads in file by file (run) and adds data to run_data_dict.
+    reads in file by file (run) and adds data to run_data_dict. This combines all data from the different sensors into one
     """
-    print("\nfilling in file data ...")
+    print("\ncombining sensor data from files...")
     # TODO: check if rewrite in assemble_data works with this as is (subfolder structure)
 
     for n in range(len(list(filedict.values())[0])):  # loops through number of files
@@ -524,7 +532,7 @@ def fill_file_data(filedict, path):
         #print("\n ---- run: ", run)
         run_number = run.rsplit(os.sep, 1)[1]
         run_number = run_number.split("_", 1)[0]
-        #print("run number: {}".format(run_number))
+        print("run number: {}".format(run_number))
 
         columnnames = []
         for topic in list(filedict.keys()):
@@ -533,7 +541,7 @@ def fill_file_data(filedict, path):
 
             # read the file of the current run, which belongs to topic
             file = [f for f in filedict[topic] if run_number in f][0]
-            #print("file: ", file)
+            print("file: ", file)
 
             data = pd.read_csv(file)
 
@@ -594,6 +602,8 @@ def fill_file_data(filedict, path):
         magneto_raw_dict[run_number] = run_data_dict
     # print("\n\n------------------------------\n\n",
     #       "magneto_raw_dict: \n", "{" + "\n".join("{!r}: {!r},".format(k, v) for k, v in magneto_raw_dict.items()) + "}")
+
+    print("Done! Combining sensor data complete")
     return
 
 
@@ -678,13 +688,12 @@ def magneto_data_assembly(filedict, overwrite_csv_files, df_trial_notes, date):
         fill_file_data(filedict, result_trial_assembly_path)
 
     # if overwrite_csv_files == True and _assemled.csv files exist:
-    elif overwrite_csv_files == True and os.listdir(result_trial_assembly_path) != []:
+    if overwrite_csv_files == True and os.listdir(result_trial_assembly_path) != []:
         # use this function if analysing the 28-10-2020 data collection with predefined run_info dict
         #fill_trial_note_data_from_dict(result_trial_assembly_path, run_number_runs)
         # use this function to use the dataCollectionTable for the current run analysed.
         fill_trial_note_data_from_file(result_trial_assembly_path, df_trial_notes)
     else:
-        print("No files in assembled folder. Maybe set overwrite csv files to True?")
         exit()
 
     return

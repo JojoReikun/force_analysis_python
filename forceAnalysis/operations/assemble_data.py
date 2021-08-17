@@ -76,7 +76,10 @@ def read_in_files_magneto(date, folder_path):
     merged_filedict = dict(zip(magneto_patterns.keys(), [None]*len(magneto_patterns.keys())))
     print("merged filedict: ", merged_filedict)
 
+
+    no_files_list = []
     # go through each trial folder, go to the csv folder within it and create a filedict for that trial folder
+    print("adding trial date to filenames...")
     for trial_folder in trial_folder_list:
         filedict = {}
         path = os.path.join(folder_path, trial_folder)
@@ -86,31 +89,30 @@ def read_in_files_magneto(date, folder_path):
         # only if date and time not already in filename
         csv_file_list = glob(os.path.join(csv_folder_path, "*.csv"))
         for csv_file in csv_file_list:
-            if csv_file.startswith("magneto") == True:
-                print("adding trial date to filenames...")
-                # use this section if data accidentally contained twice in filename now:
-                # works if original files start with "magneto"
-                keep_from = "magneto"
-                pure_file_name = csv_file.rsplit(os.path.sep, 1)[1]
-                orig_file_name = pure_file_name.partition(keep_from)[1] + "_" + pure_file_name.partition(keep_from)[2]
-                #print("filename reset: ", orig_file_name)
+            # use this section if data accidentally contained twice in filename now:
+            # works if original files start with "magneto"
+            keep_from = "magneto"
+            pure_file_name = csv_file.rsplit(os.path.sep, 1)[1]
+            orig_file_name = pure_file_name.partition(keep_from)[1] + "_" + pure_file_name.partition(keep_from)[2]
+            #print("filename reset: ", orig_file_name)
 
-                new_csv_name = trial_folder + "_" + orig_file_name
-                #print("new csv name: ", new_csv_name)
+            new_csv_name = trial_folder + "_" + orig_file_name
+            #print("new csv name: ", new_csv_name)
 
-                os.rename(csv_file, os.path.join(csv_folder_path, new_csv_name))
-            else:
-                continue
+            os.rename(csv_file, os.path.join(csv_folder_path, new_csv_name))
 
         # create a file dict for each trial folder
         # get all the csv files which match any of the pre-defined name patterns to include only files of sensors of interest
         filelist = [f for f_ in [glob(os.path.join(csv_folder_path, pattern[1])) for pattern in list(magneto_patterns.values())] for f in f_]
+        print("filelist: ", filelist)
+
 
         if len(filelist) > 0:
             pass
         else:
             print("WARNING: no files found")
-            exit()
+            no_files_list.append(trial_folder)
+            #exit()
 
         # creates individual lists for each element in magneto_patterns.keys()
         for element in magneto_patterns.keys():
@@ -121,7 +123,7 @@ def read_in_files_magneto(date, folder_path):
 
     print("filedicts_for_trialdate: ", filedicts_for_trialdate)
 
-    print("filedict merged empty: ", merged_filedict)
+    #print("filedict merged empty: ", merged_filedict)
 
     # now we have a list of filedicts, each of those filedicts has the same keys but different values.
     # make one big dict, with the same keys but combining all values of all filedicts for that key
@@ -139,6 +141,8 @@ def read_in_files_magneto(date, folder_path):
 
 
     print("merged filedict flattened: \n", merged_filedict)
+
+    print("missing files for: ", no_files_list)
 
     return merged_filedict
 

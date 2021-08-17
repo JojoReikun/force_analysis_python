@@ -95,6 +95,11 @@ def create_summary_file2(path, path_summary):
 
     # filter for "_assembled" in filename:
     filelist = [file for file in filelist if "_assembled_meta" in file]
+    print("filelist for summary data: ", filelist)
+
+    if filelist == []:
+        print("no fully assembled files found [>>*assembled_meta.csv<<], run forceAnalysis.assemble() first.")
+        exit()
 
     # create summary data frame:
     summarycolumns = ['date_time', 'run', 'gait', 'velocity', 'step_frequency', 'bodyheight', 'direction', 'surface', 'sensorfoot',
@@ -110,6 +115,7 @@ def create_summary_file2(path, path_summary):
         print(f"Progress: {i}/{len(filelist)}")
 
         data = pd.read_csv(file)
+        # print(data.head())
 
         summary_data['date_time'] = data['date_time'][1]
         summary_data['run'][i] = data['run'][1]
