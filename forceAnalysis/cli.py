@@ -19,11 +19,9 @@ def main(ctx, verbose):
 ##################################################################################
 
 @main.command(context_settings=CONTEXT_SETTINGS)
-@click.option('subject', help='subject which to assemble data for: either "magneto" or "lizards"')
-@click.option('date', help='date YYYY-MM-DD the data collection table and trials were recorded on')
-@click.argument('overwrite_csv_files',
-              default=True,
-              help='determines if csv files should be created and saved. If True, files that exist already will be overwritten.')
+@click.argument('subject', default="magneto", help='subject which to assemble data for: either "magneto" or "lizards"')
+@click.argument('date', default="all", help='date YYYY-MM-DD to choose single date only. Otherwise all dates will be used')
+
 @click.pass_context
 
 
@@ -31,8 +29,6 @@ def assemble_force_data(_, *args, **kwargs):
     """Reads in the given list of .csv files for the subject and assembled the data.
     Arguments \n
     ---------- \n
-    overwrite_csv_files: boolean \n
-    \tBoolean either True or False. Default: True. determine if to overwrite the csv data files for every run
 
     Options \n
     ---------- \n
@@ -53,8 +49,8 @@ def assemble_force_data(_, *args, **kwargs):
 @click.pass_context
 
 def create_summary_data(_, *args, **kwargs):
-    """Reads in the given list of *assembled_meta.csv files for the given date.
-
+    """Reads in the given list of *assembled_meta.csv files for the given date and assembles all runs into a summary data sheet,
+    taking the means of the 3 collected trials.
     Options \n
     ---------- \n
     date : string \n
@@ -62,6 +58,25 @@ def create_summary_data(_, *args, **kwargs):
     """
     from forceAnalysis.operations import create_summary_file
     create_summary_file.create_summary(*args, **kwargs)
+
+
+## GAMMA FORCE PLATE DATA
+##################################################################################
+@main.command(context_settings=CONTEXT_SETTINGS)
+@click.option('date', help='date YYYY-MM-DD the trials were recorded on')
+@click.pass_context
+def gamma_forces(_, *args, **kwargs):
+    """
+    Forces with the gamma force plate were collected during the trials with Magneto in March/April 2021.
+    Forces could only be collected for one foot at a time. The foot was noted in the trial notes (DataCollectionTable).
+    Of the 3 trials, usually one FR and one HR foot were recorded. If foot didn't hit the force plate properly this
+    was noted in the comments in the trial notes.
+    To extract the correct force spike for the footstep onto the force plate, interactive matplotlib plotting is used.
+
+    :return:
+    """
+    from forceAnalysis.operations import forces_gamma_magneto
+    forces_gamma_magneto.extract_forces_gamma(*args, **kwargs)
 
 
 
@@ -72,7 +87,7 @@ def create_summary_data(_, *args, **kwargs):
 @click.option('date', help='date YYYY-MM-DD the data collection table and trials were recorded on')
 @click.pass_context
 
-def create_summary_data(_, *args, **kwargs):
+def create_summary_data_maps(_, *args, **kwargs):
     """Reads in the summary_data file of the given date and plots the heatmap defined for that date (depends on data collected)
     Options \n
     ---------- \n

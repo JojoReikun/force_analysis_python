@@ -79,7 +79,7 @@ def create_summary_file(path, run_number_runs, path_summary):
     return
 
 
-def create_summary_file2(path, path_summary):
+def create_summary_file2(path, path_summary, date):
     """
     use this function for the Magneto@USC data collection
     """
@@ -148,13 +148,13 @@ def create_summary_file2(path, path_summary):
     print("\n", summary_data)
 
     # save summary data:
-    summary_data.to_csv(os.path.join(path_summary, "summary_data.csv"))
+    summary_data.to_csv(os.path.join(path_summary, f"{date}_summary_data.csv"))
     return
 
 
 def create_summary(date):
     from forceAnalysis.utils import auxiliaryfunctions
-    # for now hard code the paths which are used in assemble as well# generate folder structure for result files:
+
     result_path = os.path.join(os.getcwd(), "result_files")
     result_trial_path = os.path.join(result_path, date)
     result_trial_assembly_path = os.path.join(result_trial_path, "assembled_csv")
@@ -170,9 +170,8 @@ def create_summary(date):
 
         # use this function to use data from Magneto@USC data collection Mar/Apr 2021:
         # files needed for summary data contain the ending: "*assembled_meta.csv"
-        create_summary_file2(result_trial_assembly_path, path_summary)
+        create_summary_file2(result_trial_assembly_path, path_summary, date)
 
-
-    # TODO: puts multiple entries in cell?? Look at summary_data.csv and fix
+    # TODO: puts multiple entries in cell?? Look at summary_data.csv and fix ?? old comment --> check
 
     return
