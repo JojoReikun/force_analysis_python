@@ -9,6 +9,7 @@ from forceAnalysis import operations
 from forceAnalysis.operations.assemble_data import assemble
 from forceAnalysis.operations.create_summary_file import create_summary
 from forceAnalysis.operations.forces_gamma_magneto import extract_forces_gamma
+from forceAnalysis.operations.gopro_audio_analysis import plot_gopro_audio
 
 ## for 28th Oct 2020 data collection:
 from forceAnalysis.operations.plot_forces import plot_force_data
@@ -27,3 +28,6 @@ print("use: >>forceAnalysis.create_summary(date) to do this.")
 
 print("-- extract the forces of the gamma force plate for the selected date")
 print("use: >>forceAnalysis.extract_forces_gamma(date) to do this.")
+
+print("-- plot the gopro audio data to detect Magneto's steps")
+print("use: >>forceAnalysis.plot_gopro_audio(date) to do this.")

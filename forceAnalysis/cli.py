@@ -79,6 +79,21 @@ def gamma_forces(_, *args, **kwargs):
     forces_gamma_magneto.extract_forces_gamma(*args, **kwargs)
 
 
+## PLOT GOPRO AUDIO DATA
+##################################################################################
+@main.command(context_settings=CONTEXT_SETTINGS)
+@click.option('date', help='date YYYY-MM-DD the trials were recorded on')
+@click.pass_context
+def gamma_forces(_, *args, **kwargs):
+    """
+    Plot the audio of the GoPro videos and save "audio" track as csv file with matching date in name.
+    Names of GoPro videos corresponding to the trials are in magneto_climbing_gait/experiments in dataCollectionTable_all.xlsx
+
+    :return:
+    """
+    from forceAnalysis.operations import gopro_audio_analysis
+    gopro_audio_analysis.plot_gopro_audio(*args, **kwargs)
+
 
 ## PLOT HEATMAPS
 ##################################################################################
