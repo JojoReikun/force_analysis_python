@@ -52,11 +52,16 @@ To analyse the gamma force data properly, we need to know when Magneto moves the
 only moves 1 foot at any time, the foot on the force plate remains there while the 3 other feet do their step
 before it is lifted off the force plate. 
 Therefore, the idea is to plot the audio track of the GoPro to match the "clonk" spiked of the 
-Magnet feet when attaching to the steel track with the force Data. For the force Data we know
+Magnet feet when attaching to the steel track with the force Data. Once the steps are matched to the force recording,
+we can see what happens to the forces during each step. For the force Data we know
 which foot attached to the force plate and in which step cycle as well as when the force measurement was stopped.
+Sketch of idea:
+![](assets/audiospikes_forcetrack_overlay_idea.png)
+
 
 ```
-forceAnalysis.plot_gopro_audio("2021-04-07")
+>>> forceAnalysis.plot_gopro_audio(date, bool_plot_audio)
+i.e.: >>> forceAnalysis.plot_gopro_audio("07-04-2021", False)
 ```
 
 As a first step the gopro videos for the selected date are loaded and the audio track is exported 
