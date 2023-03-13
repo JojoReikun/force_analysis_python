@@ -90,10 +90,9 @@ of the trial and therefore what to do with it, when re-reading in the excel shee
 - ![#f03c15](https://placehold.co/15x15/00c943/00c943.png) `Status Code: green`: status is "green": 
   - if all 12 steps were detected and no other missing or false peaks were detected.
 
-
-
-
 As a third step, the start and end markers are then read in again when executing the same command in the console.
+Depending on the status code of the trial the audio track is treated in a different way.
+
 The spikes and their respective frames are extracted as a dict for spikes in the given frame interval only.
 
 ## Magneto
