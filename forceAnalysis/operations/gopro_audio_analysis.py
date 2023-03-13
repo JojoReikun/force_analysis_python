@@ -34,7 +34,7 @@ def read_and_plot(path_gopro_videos, df_data_info_all, l_gopro_files):
         for gopro_aud in l_gopro_audio_files:
             # extract just video name:
             audio_name = gopro_aud.rsplit(os.sep)[-1]
-            print(f'currently analysing audio {audio_name}...')
+            print(f'\n >>> currently analysing audio {audio_name}...')
             raw = wave.open(gopro_aud)
             # reads all the frames
             # -1 indicates all or max frames
@@ -60,8 +60,8 @@ def read_and_plot(path_gopro_videos, df_data_info_all, l_gopro_files):
             # actual plotting
             plt.plot(time, signal, alpha=0.7)
 
-            # find peaks > 10000 and more than 100000 frames apart. The distance might vary with speed input
-            peaks, _ = find_peaks(signal, height=10000, distance=100000)
+            # find peaks > 10000 and more than 200000 frames apart. Note: The distance might vary with speed input
+            peaks, _ = find_peaks(signal, height=10000, distance=200000)
             print("peaks: ", peaks)
             diff_peaks = np.diff(peaks)
             # get the median (most common) difference in frames between peaks
@@ -70,6 +70,8 @@ def read_and_plot(path_gopro_videos, df_data_info_all, l_gopro_files):
             print(f"most common distance between peaks: {median_diff_peaks_s} s  |   in frames: {median_diff_peaks} frames")
 
             # keep peaks with most common
+            # TODO: use the most common time difference (median of list with time between peaks) and plot vertical lines in the gamma force data
+            #  convert the time difference found in gopro in s to the respective force plate sample frequency
 
             plt.plot(time[peaks], signal[peaks], "x")
 

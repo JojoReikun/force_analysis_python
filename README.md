@@ -47,6 +47,54 @@ A summary file stored in python_force_analysis/result_files/YYYY-MM-DD/summary_d
 ## 3) Forces Gamma Magneto:
 currently working on this...
 
+## 4) Plot audio track of GoPro to detect steps Magneto:
+To analyse the gamma force data properly, we need to know when Magneto moves the feet. Because Magneto
+only moves 1 foot at any time, the foot on the force plate remains there while the 3 other feet do their step
+before it is lifted off the force plate. 
+Therefore, the idea is to plot the audio track of the GoPro to match the "clonk" spiked of the 
+Magnet feet when attaching to the steel track with the force Data. For the force Data we know
+which foot attached to the force plate and in which step cycle as well as when the force measurement was stopped.
+
+```
+forceAnalysis.plot_gopro_audio("2021-04-07")
+```
+
+As a first step the gopro videos for the selected date are loaded and the audio track is exported 
+as a separate .wav file with the same filename otherwise.
+Then the .wav file is read in and plotted and then the spikes are detected using the "find_peaks" function
+from scipy.signal library.
+As a second step the module will then check if a "audio_wave_start_s" and "audio_wave_end_s" column are already existant in the respective 
+**"{date}_gammaForces.csv"** sheet. If not user will be asked to add them in manually first (see below how to) before re-executing this 
+command.
+
+Because spikes of e.g. Magneto being put onto the steel track and being taken off might get detected as well,
+to only use the "step spikes" the user has to use the plots of the audio tracks to manually add
+a start and end column to the excel sheet **"{date}_gammaForces.csv"** as per below:
+start and end frame don't have to be exact, in the example it could be start = 25, end = 95.
+![](assets/example_gopro_audio_plot.png)
+![](assets/excel_gopro_audio.PNG)
+
+Further add a column "comments_audio" to note which audio tracks are "clean" and which ones might have some 
+missing spikes because spike was below cut-off. Also note which tracks are untidy and not worth to include 
+unless not enough data overall. Use these comments to add another column, which inidcates for the script the "status" 
+of the trial and therefore what to do with it, when re-reading in the excel sheet:
+![](assets/excel_gopro_audio_status.PNG)
+
+### Status codes explained:
+- ![#f03c15](https://placehold.co/15x15/f03c15/f03c15.png) `Status Code: red`: status is "red":
+  - if there is no foot on the FP (e.g. column start_stepon = na)
+  - if the spikes are too untidy and extra post processing would take a while
+- ![#f03c15](https://placehold.co/15x15/c98300/c98300.png) `Status Code: orange`: status is "orange":
+  - if nth spike was not detected because it was below the cut-off value "height" in the function arguments of find_peaks().
+  Use the find_peaks function again only within the manually selected interval with a lower height to detect missing peaks 
+- ![#f03c15](https://placehold.co/15x15/00c943/00c943.png) `Status Code: green`: status is "green": 
+  - if all 12 steps were detected and no other missing or false peaks were detected.
+
+
+
+
+As a third step, the start and end markers are then read in again when executing the same command in the console.
+The spikes and their respective frames are extracted as a dict for spikes in the given frame interval only.
 
 ## Magneto
 The sensors in Magneto are orientated as follows:
