@@ -17,6 +17,7 @@ import wave, sys
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 from forceAnalysis.utils import auxiliaryfunctions
+from forceAnalysis.operations import gopro_audio_force_matching
 
 
 def step3_analyse_and_extract_spikes(df_gammaForces, l_gopro_audio_files, date, dict_time_intervals, cutoff_value):
@@ -29,6 +30,7 @@ def step3_analyse_and_extract_spikes(df_gammaForces, l_gopro_audio_files, date, 
     df_gammaForces['med_frame_interval'] = ''
     df_gammaForces['audio_framerate'] = ''
     df_gammaForces['status_refined'] = 'pls update'
+    dict_audio_peaks = {}
 
     # for row in df
         # read in audiofile[row]
@@ -58,6 +60,21 @@ def step3_analyse_and_extract_spikes(df_gammaForces, l_gopro_audio_files, date, 
         signal = raw.readframes(-1)
         signal = np.frombuffer(signal, dtype="int16")
 
+        # get time start and end of step spikes interval
+        audio_interval_start_s = df_gammaForces.loc[i, "audio_wave_start_s"]
+        audio_interval_end_s = df_gammaForces.loc[i, "audio_wave_end_s"]
+
+        # convert to frames
+        # gets the frame rate
+        f_rate = raw.getframerate()
+        # to create a Time Vector spaced linearly with the size of the audio file
+        audio_interval_start_frame = int(audio_interval_start_s * f_rate)
+        audio_interval_end_frame = int(audio_interval_end_s * f_rate)
+
+        # print(f"audio file: {audio_file_name}, start frame: {audio_interval_start_frame}, end frame: {audio_interval_end_frame}")
+
+        signal_interval = signal[audio_interval_start_frame: audio_interval_end_frame]
+
         ################################################################################
         # Individual status handling:
         if status == "red":
@@ -68,25 +85,16 @@ def step3_analyse_and_extract_spikes(df_gammaForces, l_gopro_audio_files, date, 
         if status == "green":
             print("STATUS GREEN")
             df_gammaForces.loc[i, "status_refined"] = df_gammaForces.loc[i, "status"]
+
+            # detect the spikes with original cut-off frequency (cutoff_value)
+            peaks, _ = find_peaks(signal_interval, height=cutoff_value, distance=200000)
+
+            # write peaks to dict_audio_peaks
+            dict_audio_peaks[audio_file_name] = peaks
             continue
 
         if status == "orange":
             print("STATUS ORANGE")
-            # get time start and end of step spikes interval
-            audio_interval_start_s = df_gammaForces.loc[i, "audio_wave_start_s"]
-            audio_interval_end_s = df_gammaForces.loc[i, "audio_wave_end_s"]
-
-            # convert to frames
-            # gets the frame rate
-            f_rate = raw.getframerate()
-            # to create a Time Vector spaced linearly with the size of the audio file
-            audio_interval_start_frame = int(audio_interval_start_s * f_rate)
-            audio_interval_end_frame = int(audio_interval_end_s * f_rate)
-
-            # print(f"audio file: {audio_file_name}, start frame: {audio_interval_start_frame}, end frame: {audio_interval_end_frame}")
-
-            signal_interval = signal[audio_interval_start_frame : audio_interval_end_frame]
-
             # to Plot the x-axis in seconds get the frame rate and divide by size of your signal
             # to create a Time Vector spaced linearly with the size of the audio file
             x = np.linspace(audio_interval_start_frame, audio_interval_end_frame, len(signal_interval)) # start, stop, num
@@ -110,6 +118,8 @@ def step3_analyse_and_extract_spikes(df_gammaForces, l_gopro_audio_files, date, 
             new_peaks, _ = find_peaks(signal_interval, height=new_cutoff, distance=200000)
             # make list with peaks which are not in previous peaks
             only_new_peaks = [i for i in new_peaks if i not in peaks]
+
+            # plot only new found peaks in red
             plt.plot(x[only_new_peaks], signal_interval[only_new_peaks], "o", color="r")
             plt.hlines(new_cutoff, x[0], x[-1], linestyles='--', color='r')
 
@@ -122,6 +132,9 @@ def step3_analyse_and_extract_spikes(df_gammaForces, l_gopro_audio_files, date, 
             print("all_peaks: ", all_peaks)
             #all_peaks = all_peaks.astype("int32")
 
+            # write peaks to dict_audio_peaks
+            dict_audio_peaks[audio_file_name] = all_peaks
+
             # write all_peaks, and average_time interval from dict to df
             # df_gammaForces.loc[i, "interval_peaks"] = all_peaks   # doesn't work like this to write array into df cell...
             df_gammaForces.loc[i, "med_time_interval"] = dict_time_intervals[audio_file_name][1]
@@ -131,9 +144,9 @@ def step3_analyse_and_extract_spikes(df_gammaForces, l_gopro_audio_files, date, 
 
 
     print(df_gammaForces.head(10))
-    print("DONE")
+    print("DONE\n\n")
 
-    return df_gammaForces
+    return df_gammaForces, dict_audio_peaks
 
 
 def step2_plot_and_spikes(l_gopro_audio_files):
@@ -239,7 +252,8 @@ def plot_gopro_audio(date, bool_plot_audio):
       3.1) load in respective gopro videos and extract audio
       3.2) plot sound and find spikes (steps)
       Manually find "spikes interval" matching the steps of trial using plots. Detailed description in README.md
-      3.3)
+      3.3) Using the status code, the interval will then be analysed further. Complete peaks will be written to a
+      dict to then match those to the force data of the respective run (status green and orange only)
     :param bool_plot_audio: boolean, default False. If true: Plots audio anyway, even if Step2 has been completed and intervals have been extracted already.
     :return:
     """
@@ -288,14 +302,13 @@ def plot_gopro_audio(date, bool_plot_audio):
         # check if columns of audio intervals exist already -> exit and do step3 instead. (analyse and extract peaks)
         if all(item in gammaForces_columns for item in columns_needed):
             # >>>> leads over to Step3.
-            df_gammaForces_updated = step3_analyse_and_extract_spikes(df_gammaForces, l_gopro_audio_files, date, dict_time_intervals, cutoff_value)
-            df_gammaForces_updated.to_csv(os.path.join(path_gammaForces_sheet, f"{date}_gammaForces_step3.csv"))
-            print("reanalysed status orange audio files. Please check the new plots and update >>status_refined<< column"
-                  " in {date}_gammaForces_step3.csv in \n", path_gammaForces_sheet)
-
-            # TODO: find a way to export list with peaks to dataframe
-            # TODO: then manually change "status_refined" in {date}_gammaForces_step3
-            # TODO: Then match audio to forces in new module
+            df_gammaForces_updated, dict_audio_peaks = step3_analyse_and_extract_spikes(df_gammaForces, l_gopro_audio_files, date, dict_time_intervals, cutoff_value)
+            if os.path.isfile(os.path.join(path_gammaForces_sheet, f"{date}_gammaForces_step3.csv")):
+                print("step3 csv already exists.")
+            else:
+                df_gammaForces_updated.to_csv(os.path.join(path_gammaForces_sheet, f"{date}_gammaForces_step3.csv"))
+                print("reanalysed status orange audio files. Please check the new plots and update >>status_refined<< column"
+                      " in {date}_gammaForces_step3.csv in \n", path_gammaForces_sheet)
 
         else:
             print("Still missing needed columns. Fill in manually before executing again.")
@@ -303,6 +316,15 @@ def plot_gopro_audio(date, bool_plot_audio):
             print("look at the plots of the audio tracks & add start and end frame of the step spikes into the csv file.")
             print("add a status to the audio of the trial. Detailed explanation of how this works in README.md")
             print("once completed, rerun forceAnalysis.plot_gopro_audio() in the console.")
+
+        """
+        Now the audio peaks will be matched to the force data to determine where in the force data the steps occur. 
+        A submodule is called to do that using the csv file coming out of step3 and the dict_audio_peaks.
+        dict_audio_peaks: contains audio_file_name and detected step peaks
+        path_gammaForces_sheet: file path to the force folder of selected date
+        l_gopro_audio_files: list with all gopro audio file paths
+        """
+        gopro_audio_force_matching.match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audio_files, date)
 
     # otherwise, warn of absence of gopro videos and quit:
     else:

@@ -3,6 +3,7 @@ from forceAnalysis.operations.assemble_data import assemble
 from forceAnalysis.operations.create_summary_file import create_summary
 from forceAnalysis.operations.forces_gamma_magneto import extract_forces_gamma
 from forceAnalysis.operations.gopro_audio_analysis import plot_gopro_audio
+from forceAnalysis.operations.gopro_audio_force_matching import match_audio_and_force
 
 from forceAnalysis.operations.plot_forces import plot_force_data
 from forceAnalysis.operations.plot_imu_data import plot_imu
