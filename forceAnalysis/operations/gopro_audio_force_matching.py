@@ -155,8 +155,8 @@ def match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audi
                     print("absolute_audio_peaks: ", absolute_audio_peaks)
                     audio_peaks_in_force_frames = [(i+ind_min_z_force) for i in absolute_audio_peaks]
                     print("plot_vlines_at...: ", audio_peaks_in_force_frames)
-                    # TODO: it looks like later added peaks are not included in audio_peak_dict? Audio peaks on force data seem far apart?
-                    # TODO: maybe instead of frames use the time and convert to frames in each without force interpolation?
+                    # TODO: it looks like later added peaks are not included in audio_peak_dict?
+
                     # plot forces:
                     # at min(z_force) plot first hline of audio peak[foot_on_fp - 1]
                     # add other audio peaks as hlines by getting the difference in frames to next peak frame
