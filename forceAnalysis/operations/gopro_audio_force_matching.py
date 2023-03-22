@@ -12,6 +12,36 @@ from scipy import signal, interpolate
 import matplotlib.pyplot as plt
 
 
+def extract_force_details(vline_list, df_forces, date):
+    """
+    This function is called from within the for loop iterating through the individual audio files in match_audio_and_force()
+    to extract max, min, and mean from the individual step intervals.
+    This data is stored a new data sheet containing audio filename, force filename, run number,  foot on FP,
+    step, force interval frames, and the force details for each axis
+    :return:
+    """
+    df_force_detail_colnames = ["audiofile", "forcefile", "run", "foot_on_fp", "step", "step_forceframes_start",
+                                "step_forceframes_end", "Fx_max", "Fy_max", "Fz_max", "Fx_min", "Fy_min", "Fz_min",
+                                "Fx_mean", "Fy_mean", "Fz_mean"]
+    # need the plot_vlines_at list, the df_forces, date
+    for i, vline in len(vline_list):
+        if i == 0:
+            continue
+        # takes interval from previous i to i
+        else:
+            Fx_max = max(df_forces["Fx"][vline_list[i-1]:vline_list[i]])
+            Fy_max = max(df_forces["Fy"][vline_list[i-1]:vline_list[i]])
+            Fz_max = max(df_forces["Fz"][vline_list[i-1]:vline_list[i]])
+            Fx_min = min(df_forces["Fz"][vline_list[i-1]:vline_list[i]])
+            Fy_min = min(df_forces["Fy"][vline_list[i-1]:vline_list[i]])
+            Fz_min = min(df_forces["Fz"][vline_list[i-1]:vline_list[i]])
+            Fx_mean = np.nanmean(df_forces["Fx"][vline_list[i-1]:vline_list[i]])
+            Fy_mean = np.nanmean(df_forces["Fy"][vline_list[i-1]:vline_list[i]])
+            Fz_mean = np.nanmean(df_forces["Fz"][vline_list[i-1]:vline_list[i]])
+
+    return
+
+
 def match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audio_files, date):
     """
     this function will use the {date}_gammaForces_step3.csv file and the dict containing the audio peaks from the
@@ -24,7 +54,9 @@ def match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audi
     :return:
     """
 
-    interpolation = True
+    ### if interpolation == True, the force data will be upsampled to match the sampling rate of the audio data.
+    ### if False, the framerates of each will be converted to times and audio steps converted to force intervals that way.
+    interpolation = False
     error_message = "Please manually add a >>foot_on_fp<< column to the {date}_gammaForces_step3.csv file \nto extract which\n\
                     step is on the force plate.\n\
                     Make a copy of this file and name as *_step4.csv\n\
@@ -141,10 +173,10 @@ def match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audi
 
                     ### now match the audio peak foot spike for "foot_on_fp" onto the min_z_force
                     relevant_audio_peak_frames = dict_audio_peaks[audio_file_name][foot_on_fp-1:(foot_on_fp-1)+5]
-                    print("relevant_audio_peak_frames: ", relevant_audio_peak_frames.astype(int))
+                    print("relevant_audio_peak_frames: ", relevant_audio_peak_frames)
                     diff_relevant_audio_peak_frames = np.diff(relevant_audio_peak_frames)
                     diff_relevant_audio_peak_frames = np.insert(diff_relevant_audio_peak_frames, 0, 0)
-                    print("diff_relevant_audio_peak_frames: ", diff_relevant_audio_peak_frames.astype(int))
+                    print("diff_relevant_audio_peak_frames: ", diff_relevant_audio_peak_frames)
                     # to each element in the list add the sum of all previous elements, otherwise all hlines will be at a
                     # similar spot as only the relative difference is plotted:
                     absolute_audio_peaks = []

@@ -129,6 +129,7 @@ def step3_analyse_and_extract_spikes(df_gammaForces, l_gopro_audio_files, date, 
             #################################################################
             # write peaks as list and average time interval into df
             all_peaks = np.concatenate((peaks, only_new_peaks), axis=None)
+            all_peaks = sorted(all_peaks)   # sort peaks so they appear in order in list.
             print("all_peaks: ", all_peaks)
             #all_peaks = all_peaks.astype("int32")
 
