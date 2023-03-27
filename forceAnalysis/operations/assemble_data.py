@@ -125,7 +125,9 @@ def read_in_files_magneto(date, folder_path):
             csv_file_list = glob(os.path.join(csv_folder_path, "*.csv"))
 
             # create a string pattern to match. If csv contains date already it will match! No renaming then.
-            reg_compile = re.compile("\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}.*")
+            reg_compile = re.compile("\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}.*")\
+            # TODO: if there are more runs than desired dataset in trial folder: add option to enter selected trial
+            #  interval or instead of trial folder have user select the relevant folders! (currently moved trial folders with other foot ratios in new folder for 2021-03-31)
             for csv_file in csv_file_list:
                 #print(f"csv_file: {csv_file}")
                 csv_file_filename = csv_file.rsplit(os.path.sep)[-1]

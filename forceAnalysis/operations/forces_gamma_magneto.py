@@ -24,8 +24,8 @@ def plot_forces_gamma(df_force_file, run_number):
     Fy = df_force_file["Fy"]
     Fz = df_force_file["Fz"]
 
-    min_lim = 26000
-    max_lim = 50000
+    min_lim = 0
+    max_lim = nrows
     limits = [min_lim, max_lim]
     plt.plot(x[limits[0]:limits[1]], Fx[limits[0]:limits[1]], color='green', alpha = 0.5, label="Fx")
     plt.plot(x[limits[0]:limits[1]], Fy[limits[0]:limits[1]], color='blue', alpha = 0.5, label="Fy")
@@ -62,7 +62,7 @@ def forces_gamma_read_files(date, force_files_path):
 
     #for force_file in force_filelist:
 
-    force_file = force_filelist[3]      # for debugging only use first force file
+    force_file = force_filelist[7]      # for debugging only use first force file
     # extract the run number and use as keys for dict_forces_gamma:
     filename_orig = force_file.rsplit(os.sep)[-1]
     filename = filename_orig.replace("run", "*")

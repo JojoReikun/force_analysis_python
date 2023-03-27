@@ -56,6 +56,14 @@ def extract_force_details(vline_list, df_step4, df_forces, date, i, gait):
             Fy_mean = np.nanmean(df_forces["Fy"][vline_list[j-1]:vline_list[j]])
             Fz_mean = np.nanmean(df_forces["Fz"][vline_list[j-1]:vline_list[j]])
 
+           # calculate combined Fxy and their direction as done in Lizard HU vs HD paper!
+           # Fxy_max =
+           # Fxy_min =
+           # Fxy_mean =
+           # Fxy_dir =
+
+            # TODO: calculate lateral force (Fx, and Fy combined and their direction as in Lizard paper!)
+
             print(f"Fx_mean: {Fx_mean}, Fy_mean: {Fy_mean}, Fz_mean: {Fz_mean}")
 
             if j == 1:
@@ -191,9 +199,9 @@ def match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audi
                 foot_on_fp = int(df_gammaForces.loc[row, "foot_on_fp"])
                 print(f"foot on force plate: {foot_on_fp}")
                 if foot_on_fp == 4:
-                    plot_title = "FR on Force Plate"
-                elif foot_on_fp == 5:
                     plot_title = "HR on Force Plate"
+                elif foot_on_fp == 5:
+                    plot_title = "FR on Force Plate"
 
                 if interpolation == True:
                     ### interpolate force data (5000 Hz) to match the sampling rate of audio data (44100 Hz):
@@ -264,11 +272,13 @@ def match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audi
                              label="Fy")
                     plt.plot(xnew[limits[0]:limits[1]], ynew_force_z[limits[0]:limits[1]], color='red', alpha=0.5,
                              label="Fz")
+
                     plt.scatter(ind_min_z_force, min_z_force)
                     for u, audio_p in enumerate(audio_peaks_in_force_frames):
                         plt.vlines(audio_p, min(ynew_force_z), max(ynew_force_z))
                         plt.text(audio_p + audio_p/100, max(ynew_force_z), f"step {foot_on_fp + u}")
                     plt.title(f"{audio_file_name} - {plot_title} - interp")
+                    plt.legend()
                     plt.savefig(os.path.join(path_gammaForces_sheet, "plots",
                                              f"{audio_file_name}_forces_and_audiopeaks.jpg"))  # save as jpg
                     plt.show(block=True)
@@ -336,6 +346,7 @@ def match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audi
                     plt.plot(x[limits[0]:limits[1]], df_force_file['Fz'][limits[0]:limits[1]], color='red', alpha=0.5,
                              label="Fz")
                     plt.scatter(ind_min_z_force, min_z_force)
+                    plt.legend()
                     for a, audio_p in enumerate(absolute_force_audio_peaks_plot):
                         plt.vlines(audio_p, min(list(df_force_file['Fx'])), max(list(df_force_file['Fx'])))
                         plt.text(audio_p + audio_p/100, max(list(df_force_file['Fx'])), f"step {foot_on_fp + a}")

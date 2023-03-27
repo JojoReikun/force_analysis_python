@@ -23,6 +23,7 @@ print("forceAnalysis imported successfully. Now you can: \n")
 print("-- assemble the trial data combining the Magneto sensor data, and trial note info")
 print("use: >>forceAnalysis.assemble(subject, date) to do this.")
 print("subject: >>magneto<<. date: >>YYYY-MM-DD<<")
+print("make sure the >>time<< column in the dataCollectionSheet matches the time in string in the folder names!")
 
 print("-- create a summary file for the selected date")
 print("use: >>forceAnalysis.create_summary(date) to do this.")
