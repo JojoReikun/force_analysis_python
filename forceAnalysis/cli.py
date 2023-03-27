@@ -100,7 +100,8 @@ def gamma_forces(_, *args, **kwargs):
 
 @main.command(context_settings=CONTEXT_SETTINGS)
 @click.option('date', help='date YYYY-MM-DD the data collection table and trials were recorded on')
-@click.option('bool_plot_audio', help='Default is False. If true plots audio even if spike intervals have been extracted already. Handy for replotting after code changes.')
+@click.option('gait', help='int 1 or 2: Which gait was used for Magneto. gait1: Circular pattern starting FR anti-clockwise. '
+                           'gait2: more Lizard-like pattern startinf FR, then HL, FL, HR. Default gait2.')
 @click.pass_context
 
 def create_summary_data_maps(_, *args, **kwargs):
@@ -109,7 +110,7 @@ def create_summary_data_maps(_, *args, **kwargs):
     ---------- \n
     date : string \n
     \tString as YYYY-MM-DD
-    bool_plot_audio boolean \n
+    bool_plot_audio int \n
     """
     from forceAnalysis.operations import plot_landscapes_from_data
     plot_landscapes_from_data.plot_heatmaps(*args, **kwargs)

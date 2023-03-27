@@ -245,7 +245,7 @@ def step1_read_and_convert(path_gopro_videos, l_gopro_files):
 
 #######################################################################################################################
 # main function (called by cli):
-def plot_gopro_audio(date, bool_plot_audio):
+def plot_gopro_audio(date, gait):
     """
     1st) read in dataCollectionTable_all to match gopro to trial of user input date
     2nd) find the gopro video folder of date and make file list if videos available
@@ -255,11 +255,14 @@ def plot_gopro_audio(date, bool_plot_audio):
       Manually find "spikes interval" matching the steps of trial using plots. Detailed description in README.md
       3.3) Using the status code, the interval will then be analysed further. Complete peaks will be written to a
       dict to then match those to the force data of the respective run (status green and orange only)
-    :param bool_plot_audio: boolean, default False. If true: Plots audio anyway, even if Step2 has been completed and intervals have been extracted already.
+    :param gait: int, default 2. gait1 is a circular default Magneto pattern [FR> FL> HL> HR], gait2 [FR> HL> FL>HR].
     :return:
     """
-    if bool_plot_audio is None:
-        bool_plot_audio = False
+    if isinstance(gait, int):
+        print(f"selected gait of Magneto for current trial date: {gait}")
+    else:
+        print("please provide gait used for Magneto as integer 1 (gait1) or 2 (gait2)")
+        exit()
 
     # define path to data collection table (hardcoded for this python function for testing purposes):
     path_experiment_folder = r'D:\Jojo\PhD\CSIRO\magneto_climbing_gait\experiments'
@@ -325,7 +328,7 @@ def plot_gopro_audio(date, bool_plot_audio):
         path_gammaForces_sheet: file path to the force folder of selected date
         l_gopro_audio_files: list with all gopro audio file paths
         """
-        gopro_audio_force_matching.match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audio_files, date)
+        gopro_audio_force_matching.match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audio_files, date, gait)
 
     # otherwise, warn of absence of gopro videos and quit:
     else:

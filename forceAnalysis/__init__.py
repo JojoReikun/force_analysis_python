@@ -30,5 +30,5 @@ print("use: >>forceAnalysis.create_summary(date) to do this.")
 print("-- extract the forces of the gamma force plate for the selected date")
 print("use: >>forceAnalysis.extract_forces_gamma(date) to do this.")
 
-print("-- plot the gopro audio data to detect Magneto's steps")
-print("use: >>forceAnalysis.plot_gopro_audio(date) to do this.")
+print("-- plot the gopro audio data to detect Magneto's steps, and match it to the force data. Step-wise force details will be extracted")
+print("use: >>forceAnalysis.plot_gopro_audio(date, gait) to do this.")
