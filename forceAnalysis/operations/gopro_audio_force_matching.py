@@ -12,34 +12,88 @@ from scipy import signal, interpolate
 import matplotlib.pyplot as plt
 
 
-def extract_force_details(vline_list, df_forces, date):
+def extract_force_details(vline_list, df_step4, df_forces, date, i):
     """
     This function is called from within the for loop iterating through the individual audio files in match_audio_and_force()
     to extract max, min, and mean from the individual step intervals.
-    This data is stored a new data sheet containing audio filename, force filename, run number,  foot on FP,
-    step, force interval frames, and the force details for each axis
-    :return:
-    """
-    df_force_detail_colnames = ["audiofile", "forcefile", "run", "foot_on_fp", "step", "step_forceframes_start",
-                                "step_forceframes_end", "Fx_max", "Fy_max", "Fz_max", "Fx_min", "Fy_min", "Fz_min",
-                                "Fx_mean", "Fy_mean", "Fz_mean"]
-    # need the plot_vlines_at list, the df_forces, date
-    for i, vline in len(vline_list):
-        if i == 0:
-            continue
-        # takes interval from previous i to i
-        else:
-            Fx_max = max(df_forces["Fx"][vline_list[i-1]:vline_list[i]])
-            Fy_max = max(df_forces["Fy"][vline_list[i-1]:vline_list[i]])
-            Fz_max = max(df_forces["Fz"][vline_list[i-1]:vline_list[i]])
-            Fx_min = min(df_forces["Fz"][vline_list[i-1]:vline_list[i]])
-            Fy_min = min(df_forces["Fy"][vline_list[i-1]:vline_list[i]])
-            Fz_min = min(df_forces["Fz"][vline_list[i-1]:vline_list[i]])
-            Fx_mean = np.nanmean(df_forces["Fx"][vline_list[i-1]:vline_list[i]])
-            Fy_mean = np.nanmean(df_forces["Fy"][vline_list[i-1]:vline_list[i]])
-            Fz_mean = np.nanmean(df_forces["Fz"][vline_list[i-1]:vline_list[i]])
+    This data is stored as a new data sheet (csv saved from df_force_detail) containing:
+    "audiofile", "forcefile", "run", "foot_on_fp", "foot", "step", "step_forceframes_start",
+    "step_forceframes_end", "Fx_max", "Fy_max", "Fz_max", "Fx_min", "Fy_min", "Fz_min",
+    "Fx_mean", "Fy_mean", "Fz_mean"
 
-    return
+    :param: vline_list: contains the audio peaks in force frames which refer to the steps while foot_on_fp
+    :param: df_forces: raw force data
+    :param: df_step4: equals df_gammaForces, the df which contains details to force and audio data (step4.csv)
+    :param: date: date of trial which is selected for analysis by user. Format: >>YYYY-MM-DD<<
+    :param: i: current row of df_forces the match_audio_and_force() function is in, use to get correct info from df_forces here
+    :return: df_rows_append: df containing the rows of step intervals for current run i to append
+    """
+
+    print(f"\n EXTRACTING STEP WISE FORCE DATA for step4 row {i}...\n")
+
+    # creates empty DataFrame with the columns to be filled in with step-wise info. Data for each step will be added to this.
+    df_rows_append = pd.DataFrame(columns=["audiofile", "forcefile", "run", "foot_on_fp", "foot", "step", "step_forceframes_start",
+    "step_forceframes_end", "Fx_max", "Fy_max", "Fz_max", "Fx_min", "Fy_min", "Fz_min",
+    "Fx_mean", "Fy_mean", "Fz_mean"])
+
+    # need the plot_vlines_at list, the df_forces, date
+    # iterate through the audio peaks of the current run: peak j == 0 to j == 1 is foot_on_fp
+    vline_list = [int(n) for n in vline_list]
+    for j, vline in enumerate(vline_list):
+        # skip index 0 peak cause this is start of interval of first step
+        if j == 0:
+            continue
+
+        # takes interval from previous j to j and extracts data from step interval:
+        else:
+            Fx_max = max(df_forces["Fx"][vline_list[j-1]:vline_list[j]])
+            Fy_max = max(df_forces["Fy"][vline_list[j-1]:vline_list[j]])
+            Fz_max = max(df_forces["Fz"][vline_list[j-1]:vline_list[j]])
+            Fx_min = min(df_forces["Fx"][vline_list[j-1]:vline_list[j]])
+            Fy_min = min(df_forces["Fy"][vline_list[j-1]:vline_list[j]])
+            Fz_min = min(df_forces["Fz"][vline_list[j-1]:vline_list[j]])
+            Fx_mean = np.nanmean(df_forces["Fx"][vline_list[j-1]:vline_list[j]])
+            Fy_mean = np.nanmean(df_forces["Fy"][vline_list[j-1]:vline_list[j]])
+            Fz_mean = np.nanmean(df_forces["Fz"][vline_list[j-1]:vline_list[j]])
+
+            if j == 1:
+                foot_on_fp = df_step4["foot_on_fp"][i]
+
+            step = foot_on_fp + (j-1)
+
+            if foot_on_fp == 4:
+                foot = "FR"
+            elif foot_on_fp == 5:
+                foot = "HR"
+            else:
+                foot = np.nan
+
+            #create single DataFrame column to return and append & assign values to all other columns for current step interval (j-1):j
+            run = df_step4["run"][i]
+            df_row_append = pd.DataFrame({
+                "audiofile": df_step4["audiofile"][i],
+                "forcefile": f"{date}_run{run}.txt",
+                "run": run,
+                "foot_on_fp": foot_on_fp,
+                "foot": foot,
+                "step": step,
+                "step_forceframes_start": vline_list[j-1],
+                "step_forceframes_end": vline_list[j],
+                "Fx_max": Fx_max,
+                "Fy_max": Fy_max,
+                "Fz_max": Fz_max,
+                "Fx_min": Fx_min,
+                "Fy_min": Fy_min,
+                "Fz_min": Fz_min,
+                "Fx_mean": Fx_mean,
+                "Fy_mean": Fy_mean,
+                "Fz_mean": Fz_mean
+            })
+        df_rows_append = df_rows_append.append(df_row_append, ignore_index=True)
+
+    print("DataFrame with step-wise data to append: \n", df_rows_append)
+
+    return df_rows_append
 
 
 def match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audio_files, date):
@@ -62,11 +116,19 @@ def match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audi
                     Make a copy of this file and name as *_step4.csv\n\
                     Then call the forceAnalysis.plot_gopro_audio() function again."
 
+    print("\n MATCHING AUDIO PEAKS TO FORCE DATA...\n")
+
     ### force parameter definitions
     sample_rate = 5000          # [Hz]  Seems off by factor of 2!!!!
     default_sample_time = 20   # [s]
     n_samples = 100000
     pretrigger_samples = 90000
+
+    ### Create data frame for step-wise force extraction:
+    df_force_detail_colnames = ["audiofile", "forcefile", "run", "foot_on_fp", "foot", "step", "step_forceframes_start",
+                                "step_forceframes_end", "Fx_max", "Fy_max", "Fz_max", "Fx_min", "Fy_min", "Fz_min",
+                                "Fx_mean", "Fy_mean", "Fz_mean"]
+    df_force_detail = pd.DataFrame(columns=df_force_detail_colnames)
 
     ### read in the step4 csv file and respective audio and force data files:
     step4_csv_file = os.path.join(path_gammaForces_sheet, f"{date}_gammaForces_step4.csv")
@@ -187,7 +249,6 @@ def match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audi
                     print("absolute_audio_peaks: ", absolute_audio_peaks)
                     audio_peaks_in_force_frames = [(i+ind_min_z_force) for i in absolute_audio_peaks]
                     print("plot_vlines_at...: ", audio_peaks_in_force_frames)
-                    # TODO: it looks like later added peaks are not included in audio_peak_dict?
 
                     # plot forces:
                     # at min(z_force) plot first hline of audio peak[foot_on_fp - 1]
@@ -209,6 +270,10 @@ def match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audi
                     plt.savefig(os.path.join(path_gammaForces_sheet, "plots",
                                              f"{audio_file_name}_forces_and_audiopeaks.jpg"))  # save as jpg
                     plt.show(block=True)
+
+                    ## call step-wise force extraction function here:
+                    df_rows_append = extract_force_details(audio_peaks_in_force_frames, df_gammaForces, df_force_file, date, i)
+                    df_force_detail = df_force_detail.append(df_rows_append, ignore_index=True)
 
                 else:
                     # overlay the audio data without upsampling the force data to match audio sampling frequency.
@@ -276,6 +341,14 @@ def match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audi
                     plt.savefig(os.path.join(path_gammaForces_sheet, "plots",
                                              f"{audio_file_name}_forces_and_audiopeaks_noInterp.jpg"))  # save as jpg
                     plt.show(block=True)
+
+                    ## call step-wise force extraction function here:
+                    df_rows_append = extract_force_details(absolute_force_audio_peaks_plot, df_gammaForces, df_force_file, date, i)
+                    df_force_detail = df_force_detail.append(df_rows_append, ignore_index=True)
+
+        #### STORE STEP-WISE FORCE DATA AS CSV FILE:
+        force_detail_path = os.path.join(path_gammaForces_sheet, f"{date}_forceDetailsSteps.csv")
+        df_force_detail.to_csv(force_detail_path, index=False)
 
     else:
         print(error_message)
