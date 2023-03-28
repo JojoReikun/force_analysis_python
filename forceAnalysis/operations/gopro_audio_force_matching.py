@@ -10,6 +10,22 @@ import os
 import wave, sys
 from scipy import signal, interpolate
 import matplotlib.pyplot as plt
+import math
+
+
+def calc_combined_lat_forces(df_forces):
+    l_Fxy = []
+    l_Fxy_dir = []
+
+    for row in range(df_forces.shape[0]):
+        # iterate through force data and calculate Fxy and its direction. Add to dataframe
+        Fxy = np.sqrt(df_forces.loc[row, "Fx"] ** 2 + df_forces.loc[row, "Fy"] ** 2)
+        Fxy_dir = np.arctan2(df_forces.loc[row, "Fx"], df_forces.loc[row, "Fy"])*(180.0/math.pi)
+        l_Fxy.append(Fxy)
+        l_Fxy_dir.append(Fxy_dir)
+    df_forces.loc[:, ["Fxy"]] = l_Fxy
+    df_forces.loc[:, ["Fxy_dir"]] = l_Fxy_dir
+    return df_forces
 
 
 def extract_force_details(vline_list, df_step4, df_forces, date, i, gait):
@@ -19,7 +35,7 @@ def extract_force_details(vline_list, df_step4, df_forces, date, i, gait):
     This data is stored as a new data sheet (csv saved from df_force_detail) containing:
     "audiofile", "forcefile", "gait", "run", "foot_on_fp", "foot", "step", "step_forceframes_start",
     "step_forceframes_end", "Fx_max", "Fy_max", "Fz_max", "Fx_min", "Fy_min", "Fz_min",
-    "Fx_mean", "Fy_mean", "Fz_mean"
+    "Fx_mean", "Fy_mean", "Fz_mean", "Fxy_max", "Fxy_min", "Fxy_mean", "Fxy_dir"
 
     :param: vline_list: contains the audio peaks in force frames which refer to the steps while foot_on_fp
     :param: df_forces: raw force data
@@ -29,12 +45,16 @@ def extract_force_details(vline_list, df_step4, df_forces, date, i, gait):
     :return: df_rows_append: df containing the rows of step intervals for current run i to append
     """
 
+    if "Fxy" not in df_forces.columns:
+        df_forces = calc_combined_lat_forces(df_forces)
+        print(df_forces.head())
+
     print(f"\n EXTRACTING STEP WISE FORCE DATA for step4.csv row {i}...\n")
 
     # creates empty DataFrame with the columns to be filled in with step-wise info. Data for each step will be added to this.
     df_rows_append = pd.DataFrame(columns=["audiofile", "forcefile", "gait", "run", "foot_on_fp", "foot", "step", "step_forceframes_start",
     "step_forceframes_end", "Fx_max", "Fy_max", "Fz_max", "Fx_min", "Fy_min", "Fz_min",
-    "Fx_mean", "Fy_mean", "Fz_mean"])
+    "Fx_mean", "Fy_mean", "Fz_mean", "Fxy_max", "Fxy_min", "Fxy_mean", "Fxy_dir"])
 
     # need the plot_vlines_at list, the df_forces, date
     # iterate through the audio peaks of the current run: peak j == 0 to j == 1 is foot_on_fp
@@ -46,25 +66,40 @@ def extract_force_details(vline_list, df_step4, df_forces, date, i, gait):
 
         # takes interval from previous j to j and extracts data from step interval:
         else:
-            Fx_max = max(df_forces["Fx"][vline_list[j-1]:vline_list[j]])
-            Fy_max = max(df_forces["Fy"][vline_list[j-1]:vline_list[j]])
-            Fz_max = max(df_forces["Fz"][vline_list[j-1]:vline_list[j]])
-            Fx_min = min(df_forces["Fx"][vline_list[j-1]:vline_list[j]])
-            Fy_min = min(df_forces["Fy"][vline_list[j-1]:vline_list[j]])
-            Fz_min = min(df_forces["Fz"][vline_list[j-1]:vline_list[j]])
-            Fx_mean = np.nanmean(df_forces["Fx"][vline_list[j-1]:vline_list[j]])
-            Fy_mean = np.nanmean(df_forces["Fy"][vline_list[j-1]:vline_list[j]])
-            Fz_mean = np.nanmean(df_forces["Fz"][vline_list[j-1]:vline_list[j]])
+            print("are all force values for slice nan? : ", np.isnan(list(df_forces["Fx"][vline_list[j-1]:vline_list[j]])).all())
+            if not np.isnan(list(df_forces["Fx"][vline_list[j-1]:vline_list[j]])).all():
+                print("force data is available for current interval: step {j-1} to step {j}")
+                Fx_max = np.nanmax(df_forces["Fx"][vline_list[j-1]:vline_list[j]])
+                Fy_max = np.nanmax(df_forces["Fy"][vline_list[j-1]:vline_list[j]])
+                Fz_max = np.nanmax(df_forces["Fz"][vline_list[j-1]:vline_list[j]])
+                Fx_min = np.nanmin(df_forces["Fx"][vline_list[j-1]:vline_list[j]])
+                Fy_min = np.nanmin(df_forces["Fy"][vline_list[j-1]:vline_list[j]])
+                Fz_min = np.nanmin(df_forces["Fz"][vline_list[j-1]:vline_list[j]])
+                Fx_mean = np.nanmean(df_forces["Fx"][vline_list[j-1]:vline_list[j]])
+                Fy_mean = np.nanmean(df_forces["Fy"][vline_list[j-1]:vline_list[j]])
+                Fz_mean = np.nanmean(df_forces["Fz"][vline_list[j-1]:vline_list[j]])
+                Fxy_max = np.nanmax(df_forces["Fxy"][vline_list[j-1]:vline_list[j]])
+                Fxy_min = np.nanmin(df_forces["Fxy"][vline_list[j-1]:vline_list[j]])
+                Fxy_mean = np.nanmean(df_forces["Fxy"][vline_list[j-1]:vline_list[j]])
+                Fxy_dir = np.nanmean(df_forces["Fxy_dir"][vline_list[j-1]:vline_list[j]])
 
-           # calculate combined Fxy and their direction as done in Lizard HU vs HD paper!
-           # Fxy_max =
-           # Fxy_min =
-           # Fxy_mean =
-           # Fxy_dir =
+            else:
+                print("force data is nan for: step {j-1} to step {j}")
+                Fx_max = np.nan
+                Fy_max = np.nan
+                Fz_max = np.nan
+                Fx_min = np.nan
+                Fy_min = np.nan
+                Fz_min = np.nan
+                Fx_mean = np.nan
+                Fy_mean = np.nan
+                Fz_mean = np.nan
+                Fxy_max = np.nan
+                Fxy_min = np.nan
+                Fxy_mean = np.nan
+                Fxy_dir = np.nan
 
-            # TODO: calculate lateral force (Fx, and Fy combined and their direction as in Lizard paper!)
-
-            print(f"Fx_mean: {Fx_mean}, Fy_mean: {Fy_mean}, Fz_mean: {Fz_mean}")
+            print(f"Fx_mean: {Fx_mean}, Fy_mean: {Fy_mean}, Fz_mean: {Fz_mean}, Fxy_mean: {Fxy_mean}, Fxy_dir: {Fxy_dir}")
 
             if j == 1:
                 foot_on_fp = int(df_step4["foot_on_fp"][i])
@@ -98,10 +133,17 @@ def extract_force_details(vline_list, df_step4, df_forces, date, i, gait):
                 "Fz_min": [Fz_min],
                 "Fx_mean": [Fx_mean],
                 "Fy_mean": [Fy_mean],
-                "Fz_mean": [Fz_mean]})
+                "Fz_mean": [Fz_mean],
+                "Fxy_max": [Fxy_max],
+                "Fxy_min": [Fxy_min],
+                "Fxy_mean": [Fxy_mean],
+                "Fxy_dir": [Fxy_dir]
+                })
+            print("df_row_append (data of current step): ", df_row_append)
+
         df_rows_append = df_rows_append.append(df_row_append, ignore_index=True)
 
-    print("DataFrame with step-wise data to append: \n", df_rows_append)
+    print("df_rows_append (data of all steps for current run): \n", df_rows_append)
 
     return df_rows_append
 
@@ -137,7 +179,7 @@ def match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audi
     ### Create data frame for step-wise force extraction:
     df_force_detail_colnames = ["audiofile", "forcefile", "gait", "run", "foot_on_fp", "foot", "step", "step_forceframes_start",
                                 "step_forceframes_end", "Fx_max", "Fy_max", "Fz_max", "Fx_min", "Fy_min", "Fz_min",
-                                "Fx_mean", "Fy_mean", "Fz_mean"]
+                                "Fx_mean", "Fy_mean", "Fz_mean", "Fxy_max", "Fxy_min", "Fxy_mean", "Fxy_dir"]
     df_force_detail = pd.DataFrame(columns=df_force_detail_colnames)
 
     ### read in the step4 csv file and respective audio and force data files:
@@ -153,6 +195,11 @@ def match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audi
 
     # check if column "foot_on_fp" exists:
     if "foot_on_fp" in gammaForces_columns:
+        ### create directory to save force plots with overlayed audio spikes to:
+        if not os.path.exists(os.path.join(path_gammaForces_sheet, "plots")):
+            # if the demo_folder directory is not present, create it
+            os.makedirs(os.path.join(path_gammaForces_sheet, "plots"))
+
         # iterate through the runs from this date:
         for row in range(len(df_gammaForces["audiofile"])):
             audio_file_name = df_gammaForces.loc[row, "audiofile"]
@@ -306,8 +353,16 @@ def match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audi
 
                     # find the audio peak for the n-th foot, which is the one on fp:
                     # reduce "foot_on_fp" by 1 as foot starts counting at 1 but indices start at 0
-                    audio_peak_foot = dict_audio_peaks[audio_file_name][foot_on_fp - 1]
-                    print(f"audio peak frame of foot on force plate: {audio_peak_foot}")
+
+                    # if the foot that is on the force plate is the one that fails, there might not be a peak.
+                    # foot_on_fp - 1 will throw and index out of bounds error!
+                    last_idx = list(dict_audio_peaks[audio_file_name]).index(dict_audio_peaks[audio_file_name][-1])
+                    if last_idx < (foot_on_fp - 1):
+                        # TODO: for now just set -2 to get it to plot the diagram; filter out in future or do different plot from here
+                        audio_peak_foot = dict_audio_peaks[audio_file_name][foot_on_fp - 2] # foot on fp the foot that fails
+                    else:
+                        audio_peak_foot = dict_audio_peaks[audio_file_name][foot_on_fp - 1]
+                        print(f"audio peak frame of foot on force plate: {audio_peak_foot}")
 
                     ### now match the audio peak foot spike for "foot_on_fp" onto the min_z_force
                     relevant_audio_peak_frames = dict_audio_peaks[audio_file_name][foot_on_fp - 1:(foot_on_fp - 1) + 5]

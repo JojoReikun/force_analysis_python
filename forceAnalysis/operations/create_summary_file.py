@@ -109,15 +109,15 @@ def create_summary_file2(path, path_summary, date):
     summary_data = pd.DataFrame(columns=summarycolumns, index=range(len(filelist)))
 
     # read in files one by one and add trial notes to dataframe:
-    i = 1
-    file = filelist[i]
+    # i = 1
+    # file = filelist[i]
     for i, file in zip(range(len(filelist)), filelist):
         print(f"Progress: {i}/{len(filelist)}")
 
         data = pd.read_csv(file)
         # print(data.head())
 
-        summary_data['date_time'] = data['date_time'][1]
+        summary_data['date_time'][i] = data['date_time'][1]
         summary_data['run'][i] = data['run'][1]
         summary_data['gait'][i] = data['gait'][1]
         summary_data['velocity'][i] = data['velocity'][1]

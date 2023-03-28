@@ -45,7 +45,15 @@ Means for the usually n=3 trials/configuration will be used.
 A summary file stored in python_force_analysis/result_files/YYYY-MM-DD/summary_data
 
 ## 3) Forces Gamma Magneto:
-currently working on this...
+This step requires a fair bit of manual work by the user. The goal is to investigate the force plots for each run for the selected trial date one by one,
+and select the force interval that contains the foot on the force plate. To go through this step:
+Prepare a new excel spreadsheet called: **"{date}_gammaForces.csv"** in the folder:
+...\magneto_climbing_gait\experiments\magnetoAtUSC_gammaForces\{date}_forcesGamma
+It should look like this:
+- green shaded columns can be copied from the respective summary data sheet ("{date}_summary_data.csv") in python_force_analysis result_files folder
+- ornage shaded columns need to be added and filled in while plotting individual run force tracks. Write "na" if no foot is on the force plate (see comments)
+![](assets/excel_extract_gamma_forces.PNG)
+
 
 ## 4) Plot audio track of GoPro to detect steps Magneto:
 To analyse the gamma force data properly, we need to know when Magneto moves the feet. Because Magneto
@@ -60,14 +68,23 @@ Sketch of idea:
 
 
 ```
->>> forceAnalysis.plot_gopro_audio(date, bool_plot_audio)
-i.e.: >>> forceAnalysis.plot_gopro_audio("07-04-2021", False)
+>>> forceAnalysis.plot_gopro_audio(date, gait)
+i.e.: >>> forceAnalysis.plot_gopro_audio("07-04-2021", 2)
 ```
+We need to know which GoPro video belongs to which run, hence the user will have to add this information into the previously 
+generated csv file: "{date}_gammaForces.csv". Add columns "gopro_video_file" and "audiofile", fill in as shown below:
+
+### -->> Step 1:
+**- needs: added columns "gopro_video_file" and "audiofile" to "{date}_gammaForces.csv" to know which GoPro videos belong to which run**
 
 As a first step the gopro videos for the selected date are loaded and the audio track is exported 
 as a separate .wav file with the same filename otherwise.
 Then the .wav file is read in and plotted and then the spikes are detected using the "find_peaks" function
 from scipy.signal library.
+
+This step is skipped if the audio files are already present.
+
+### -->> Step 2:
 As a second step the module will then check if a "audio_wave_start_s" and "audio_wave_end_s" column are already existant in the respective 
 **"{date}_gammaForces.csv"** sheet. If not user will be asked to add them in manually first (see below how to) before re-executing this 
 command.
@@ -95,10 +112,32 @@ of the trial and therefore what to do with it, when re-reading in the excel shee
 - ![#f03c15](https://placehold.co/15x15/00c943/00c943.png) `Status Code: green`: status is "green": 
   - if all 12 steps were detected and no other missing or false peaks were detected.
 
+### -->> Step 3:
 As a third step, the start and end markers are then read in again when executing the same command in the console.
 Depending on the status code of the trial the audio track is treated in a different way.
 
+For all status orange trials, the selected audio interval is reanalysed to find the missing peaks. A "status_refined"
+column is added to the "{date}_gammaForces_step3.csv" file which needs to be updated depending on how the new plots look, before proceeding to the 4th step, where the 
+found audio spikes of the steps are matched to the force data. Further a "foot_on_fp" column needs to be added manually.
+This column contains the integer of the foot step which is on the force plate. Careful!!! This depends on the gait pf the trial!
+This file has to be saved as "{date}_gammaForces_step4.csv"
+![](assets/spreadsheet_step4_example.PNG)
+
 The spikes and their respective frames are extracted as a dict for spikes in the given frame interval only.
+Plots are saved in the gopro video folder in a new "plot" directory. Look through them to adjust the status_refined in the "{date}_gammaForces_step3.csv" file:
+
+
+**Note that 11th spike is still missing in the left plot, but 8th has now been found!**
+Spike detection is done using a minimal spike interval width and a cut-off height, for reanalysing orange stati only the height is changed.
+This step might have to be re-run again, if the width is not ideal to find all missing spikes, hence increase tolerance (right plot)
+![](assets/refined_goproaudio_plot_example.png)
+
+
+### -->> Step 4:
+- **needs: "{date}_gammaForces_step4.csv"**
+
+As a 4th Step: Audio data of status green files is matched to the respective force tracks. 
+
 
 ## Magneto
 The sensors in Magneto are orientated as follows:

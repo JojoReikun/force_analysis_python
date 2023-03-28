@@ -24,8 +24,10 @@ def plot_forces_gamma(df_force_file, run_number):
     Fy = df_force_file["Fy"]
     Fz = df_force_file["Fz"]
 
+    ##### CHANGE THESE LIMITS MANUALLY TO INVESTIGATE FORCE DATA > RERUN FUNCTION IN CONSOLE TO REPLOT:
     min_lim = 0
     max_lim = nrows
+
     limits = [min_lim, max_lim]
     plt.plot(x[limits[0]:limits[1]], Fx[limits[0]:limits[1]], color='green', alpha = 0.5, label="Fx")
     plt.plot(x[limits[0]:limits[1]], Fy[limits[0]:limits[1]], color='blue', alpha = 0.5, label="Fy")
@@ -34,12 +36,8 @@ def plot_forces_gamma(df_force_file, run_number):
     plt.ylim([-50, 50])
     
     plt.legend()
-    disconnect_zoom = zoom_factory(axis)
-    # Enable scrolling and panning with the help of MPL Interactions library function like panhandler.
-    pan_handler = panhandler(figure)
-    plt.show(config={'scrollZoom': True})
 
-    # TODO: use px color by "force" -> reformat/flatten df first -> zoom into spikes
+    plt.show(config={'scrollZoom': True})
 
     return
 
@@ -98,6 +96,5 @@ def extract_forces_gamma(date):
     forces_gamma_read_files(date, forces_gamma_path_date)
 
     # First easy plotting to investigate what force data looks like and what we need to get correct force spike.
-    # the interactive matplotlib library mpl_interaction or plotly.express for this to be able to zoom
 
     return
