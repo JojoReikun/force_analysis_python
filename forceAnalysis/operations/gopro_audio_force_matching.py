@@ -245,9 +245,9 @@ def match_audio_and_force(dict_audio_peaks, path_gammaForces_sheet, l_gopro_audi
 
                 foot_on_fp = int(df_gammaForces.loc[row, "foot_on_fp"])
                 print(f"foot on force plate: {foot_on_fp}")
-                if foot_on_fp == 4:
+                if foot_on_fp == 4 or foot_on_fp == 8:
                     plot_title = "HR on Force Plate"
-                elif foot_on_fp == 5:
+                elif foot_on_fp == 5 or foot_on_fp == 9:
                     plot_title = "FR on Force Plate"
 
                 if interpolation == True:

@@ -135,8 +135,17 @@ This step might have to be re-run again, if the width is not ideal to find all m
 
 ### -->> Step 4:
 - **needs: "{date}_gammaForces_step4.csv"**
+- **audio peak dictionary created in step3**
 
 As a 4th Step: Audio data of status green files is matched to the respective force tracks. 
+Two ways to do so were coded in the proces of figuring out the best way to match the differing sample rates of force and audio data:
+With interpolation to match sample rates or without interpolation using frame rate to time to other frame rate conversions. This 
+can be chosen in the respective module within the function match_audio_and_force() by setting the bool value of interpolation = True/False.
+
+The audio signal is trimmed to the relevant spikes ...
+
+Plots of the matches trials are saved for user control and visual data analysis, example below:
+![](assets/GH017439_forces_and_audiopeaks_noInterp.jpg)
 
 
 ## Magneto
